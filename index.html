@@ -304,6 +304,21 @@ async function pullAllFromSupa(){
   }
 }
 
+async function forcePullFromCloud(){
+  if(!isOnline){ showToast('You are offline — connect to the internet first'); return; }
+  showToast('☁ Pulling all data from Supabase…');
+  setSyncStatus('syncing');
+  const count = await pullAllFromSupa();
+  if(count > 0){
+    showToast(`✓ Pulled ${count} records from cloud — reloading…`);
+    setSyncStatus('online');
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    setSyncStatus('online');
+    showToast('Cloud is empty — nothing to pull. Import a backup first.');
+  }
+}
+
 // State 
 let state = {
   menu: [],
@@ -390,16 +405,14 @@ async function dbDelete(key){
 
 //Init 
 async function init(){
-  // If localStorage is empty (new device / cleared browser), restore from Supabase
-  if(localStorage.length === 0 && isOnline){
+  // Pull from Supabase if menu-items is missing locally (new device / cleared browser)
+  if(!localStorage.getItem('menu-items') && isOnline){
     setSyncStatus('syncing');
     const count = await pullAllFromSupa();
     if(count > 0){
       showToast(`Restored ${count} records from cloud ☁`);
-      setSyncStatus('online');
-    } else {
-      setSyncStatus('online');
     }
+    setSyncStatus('online');
   } else {
     setSyncStatus(isOnline ? 'online' : 'offline');
   }
@@ -1138,6 +1151,7 @@ function renderInventoryTab(){
       <button class="btn-primary" style="width:auto;margin:0;" onclick="backupAllData()">⬇ Download backup file</button>
       <button style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:.7rem 1rem;" onclick="document.getElementById('restoreFile').click()">⬆ Restore from backup file</button>
       <input type="file" id="restoreFile" accept="application/json" style="display:none;" onchange="restoreFromBackup(this.files[0])">
+      <button style="border:1px solid var(--border);background:#e8f5e9;border-radius:8px;padding:.7rem 1rem;color:#1f3b2c;" onclick="forcePullFromCloud()">☁ Re-sync from cloud</button>
     </div>
 
     <button class="btn-text" style="width:auto;" onclick="confirmAction(this, resetAllData)">Reset all data (menu, orders, sales, customers, raw materials)</button>

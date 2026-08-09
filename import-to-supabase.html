@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Canteen → Supabase Importer</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;}
+    .card{background:#1e293b;border-radius:16px;padding:2.5rem;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+    h1{font-size:1.5rem;margin-bottom:.4rem;color:#f1f5f9;}
+    .sub{font-size:.88rem;color:#94a3b8;margin-bottom:2rem;line-height:1.6;}
+    .drop{border:2px dashed #334155;border-radius:12px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:1rem;}
+    .drop:hover,.drop.over{border-color:#6366f1;background:#6366f115;}
+    .drop-icon{font-size:2.5rem;margin-bottom:.8rem;}
+    .drop-lbl{color:#94a3b8;font-size:.9rem;}
+    .drop-lbl strong{color:#c7d2fe;}
+    #fileInput{display:none;}
+    .log{background:#0f172a;border-radius:10px;padding:1rem 1.2rem;font-family:'Courier New',monospace;font-size:.78rem;max-height:260px;overflow-y:auto;display:none;margin-top:1rem;}
+    .log p{margin:.2rem 0;line-height:1.4;}
+    .ok{color:#86efac;} .er{color:#fca5a5;} .inf{color:#93c5fd;} .dim{color:#475569;}
+    .bar-wrap{height:7px;background:#0f172a;border-radius:4px;margin-top:1rem;display:none;overflow:hidden;}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a5b4fc);transition:width .3s;border-radius:4px;}
+    .result{margin-top:1.2rem;padding:1.2rem;border-radius:10px;font-size:.9rem;display:none;line-height:1.6;}
+    .result.ok{background:#14532d;color:#86efac;border:1px solid #166534;}
+    .result.er{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;}
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>🍱 Canteen → Supabase Importer</h1>
+  <p class="sub">
+    Select your <strong>canteen-backup-*.json</strong> file. This tool pushes every key directly into
+    Supabase via the REST API — no login, no extra software needed.<br><br>
+    After it finishes, open the live Vercel app and the full menu + order history will appear.
+  </p>
+
+  <div class="drop" id="drop" onclick="document.getElementById('fileInput').click()">
+    <div class="drop-icon">📂</div>
+    <div class="drop-lbl"><strong>Click to choose</strong> or drag &amp; drop your .json backup here</div>
+  </div>
+  <input type="file" id="fileInput" accept="application/json">
+
+  <div class="bar-wrap" id="barWrap"><div class="bar" id="bar"></div></div>
+  <div class="log" id="log"></div>
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+// ── Supabase config ────────────────────────────────────────────────────────
+const SUPA_URL = 'https://gmimiyaehcpvivqodqts.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaW1peWFlaGNwdml2cW9kcXRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyNjE3NzcsImV4cCI6MjEwMTgzNzc3N30.5qeqcHVJcIkSXZGVxBDFX9k_-PMzbuVTtoSMcMc8fcE';
+
+// Uses the Supabase REST API directly — no CDN JS library needed
+async function supaUpsert(rows){
+  const res = await fetch(`${SUPA_URL}/rest/v1/store`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(rows)
+  });
+  if(!res.ok){
+    const txt = await res.text();
+    throw new Error(`HTTP ${res.status}: ${txt}`);
+  }
+  return true;
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+const logEl    = document.getElementById('log');
+const barWrap  = document.getElementById('barWrap');
+const bar      = document.getElementById('bar');
+const resultEl = document.getElementById('result');
+const drop     = document.getElementById('drop');
+const fileInp  = document.getElementById('fileInput');
+
+function addLog(msg, cls='inf'){
+  logEl.style.display = 'block';
+  const p = document.createElement('p');
+  p.className = cls;
+  p.textContent = msg;
+  logEl.appendChild(p);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ── Drag & drop ────────────────────────────────────────────────────────────
+drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('over'); process(e.dataTransfer.files[0]); });
+fileInp.addEventListener('change', ()=>process(fileInp.files[0]));
+
+// ── Main import logic ──────────────────────────────────────────────────────
+async function process(file){
+  if(!file) return;
+
+  // Reset UI
+  logEl.innerHTML=''; logEl.style.display='none';
+  resultEl.style.display='none';
+  barWrap.style.display='block'; bar.style.width='0%';
+
+  addLog(`📄 Reading: ${file.name}`);
+
+  let dump;
+  try{
+    const text = await file.text();
+    dump = JSON.parse(text);
+  }catch(e){
+    addLog(`✗ Cannot parse JSON: ${e.message}`, 'er');
+    return;
+  }
+
+  const keys = Object.keys(dump);
+  if(keys.length === 0){ addLog('✗ File is empty — no keys found', 'er'); return; }
+  addLog(`Found ${keys.length} keys: ${keys.join(' · ')}`, 'dim');
+  addLog('');
+
+  // Build Supabase rows — parse the stored JSON string back to object for JSONB
+  const rows = keys.map(k => {
+    let value;
+    try{ value = JSON.parse(dump[k]); }catch(e){ value = dump[k]; }
+    return { key: k, value, updated_at: new Date().toISOString() };
+  });
+
+  const CHUNK = 5; // small chunks so no request is too large
+  let done = 0, errCount = 0;
+
+  for(let i = 0; i < rows.length; i += CHUNK){
+    const chunk = rows.slice(i, i + CHUNK);
+    const labels = chunk.map(r => r.key).join(' + ');
+    try{
+      await supaUpsert(chunk);
+      done += chunk.length;
+      addLog(`✓ [${done}/${rows.length}] ${labels}`, 'ok');
+    }catch(e){
+      errCount++;
+      addLog(`✗ Failed: ${labels} — ${e.message}`, 'er');
+    }
+    bar.style.width = `${Math.min(100, Math.round(((i+CHUNK)/rows.length)*100))}%`;
+  }
+
+  bar.style.width = '100%';
+  addLog('');
+
+  resultEl.style.display = 'block';
+  if(errCount === 0){
+    resultEl.className = 'result ok';
+    resultEl.innerHTML = `<strong>✅ All ${done} records pushed to Supabase!</strong><br><br>
+      Now open your live Vercel app in a <em>new browser tab (or incognito)</em> —
+      it will automatically pull all ${done} records and your full menu + history will be live.`;
+    addLog(`🎉 Done! Open your Vercel app now.`, 'ok');
+  }else{
+    resultEl.className = 'result er';
+    resultEl.innerHTML = `<strong>⚠ ${errCount} batch(es) failed.</strong><br>
+      ${done} records pushed. Scroll the log above. Common cause: Supabase RLS policy missing for INSERT.<br>
+      Check the SQL section below and run it in your Supabase SQL editor.`;
+    addLog('— If you see 401/403 errors, run the RLS fix SQL below', 'er');
+    addLog('CREATE POLICY IF NOT EXISTS "anon full access" ON store FOR ALL TO anon USING (true) WITH CHECK (true);', 'dim');
+  }
+}
+</script>
+</body>
+</html>
