@@ -65,29 +65,31 @@ function renderInventoryTab() {
 
     const stockCtrl = auto
       ? `<span style="font-size:.74rem;color:var(--ink-soft);">buy raw materials to increase</span>`
-      : `<input type="number" min="1" placeholder="Qty" id="restock-${m.id}" style="width:56px;">
-         <button onclick="restock('${m.id}', +document.getElementById('restock-${m.id}').value)">+ Add</button>`;
+      : `<div class="restock-ctrl">
+           <input type="number" min="1" placeholder="Qty" id="restock-${m.id}">
+           <button onclick="restock('${m.id}', +document.getElementById('restock-${m.id}').value)">+ Add</button>
+         </div>`;
 
-    const mainRow = `<tr>
-      <td><input class="wide" value="${escapeHtml(m.name)}" onchange="updateMenuItem('${m.id}','name',this.value)">${portionsHtml}</td>
-      <td><input class="wide" list="categoryList" value="${escapeHtml(m.category || 'Uncategorized')}" onchange="updateMenuItem('${m.id}','category',this.value)"></td>
-      <td><input type="number" min="0" step="0.5" value="${m.price}" onchange="updateMenuItem('${m.id}','price',this.value)"></td>
-      <td><input type="number" min="0" max="28" value="${m.gst}" onchange="updateMenuItem('${m.id}','gst',this.value)"></td>
-      <td>
+    const mainRow = `<tr class="inv-row">
+      <td data-label="Name"><input class="wide" value="${escapeHtml(m.name)}" onchange="updateMenuItem('${m.id}','name',this.value)">${portionsHtml}</td>
+      <td data-label="Category"><input class="wide" list="categoryList" value="${escapeHtml(m.category || 'Uncategorized')}" onchange="updateMenuItem('${m.id}','category',this.value)"></td>
+      <td data-label="Price ₹"><input type="number" min="0" step="0.5" value="${m.price}" onchange="updateMenuItem('${m.id}','price',this.value)"></td>
+      <td data-label="GST %"><input type="number" min="0" max="28" value="${m.gst}" onchange="updateMenuItem('${m.id}','gst',this.value)"></td>
+      <td data-label="Mode">
         <select onchange="setStockMode('${m.id}', this.value)" title="Manual: you type the count. From recipe: calculated from raw materials.">
           <option value="manual" ${!auto ? 'selected' : ''}>Manual</option>
           <option value="auto"   ${auto  ? 'selected' : ''}>From recipe</option>
         </select>
       </td>
-      <td class="${(!auto && m.stock <= m.threshold) ? 'low' : ''}">${stockCell}</td>
-      <td><input type="number" min="0" value="${m.threshold}" onchange="updateMenuItem('${m.id}','threshold',this.value)"></td>
-      <td style="display:flex;gap:.3rem;align-items:center;flex-wrap:wrap;">${stockCtrl}</td>
-      <td><button onclick="toggleRecipeEditor('${m.id}')">Recipe${recipeCount ? ` (${recipeCount})` : ''}</button></td>
-      <td><button onclick="confirmAction(this, ()=>deleteMenuItem('${m.id}'))">Delete</button></td>
+      <td data-label="Stock" class="${(!auto && m.stock <= m.threshold) ? 'low' : ''}">${stockCell}</td>
+      <td data-label="Alert at"><input type="number" min="0" value="${m.threshold}" onchange="updateMenuItem('${m.id}','threshold',this.value)"></td>
+      <td data-label="Restock">${stockCtrl}</td>
+      <td data-label="Recipe"><button onclick="toggleRecipeEditor('${m.id}')">Recipe${recipeCount ? ` (${recipeCount})` : ''}</button></td>
+      <td data-label=""><button onclick="confirmAction(this, ()=>deleteMenuItem('${m.id}'))">Delete</button></td>
     </tr>`;
 
     const editorRow = state.recipeEditItemId === m.id
-      ? `<tr><td colspan="10">${renderRecipeEditor(m)}</td></tr>`
+      ? `<tr class="recipe-row"><td colspan="10">${renderRecipeEditor(m)}</td></tr>`
       : '';
 
     return mainRow + editorRow;
@@ -110,10 +112,10 @@ function renderInventoryTab() {
 
     ${state.menu.length ? `
     <div class="table-scroll">
-      <table class="report-table">
+      <table class="report-table inv-table">
         <thead><tr>
           <th>Name</th><th>Category</th><th>Price</th><th>GST %</th>
-          <th>Stock mode</th><th>Stock</th><th>Alert at</th><th>Restock</th><th>Recipe</th><th></th>
+          <th>Mode</th><th>Stock</th><th>Alert at</th><th>Restock</th><th>Recipe</th><th></th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>

@@ -352,6 +352,11 @@ table.report-table {
 /* must come AFTER table.report-table so the cascade correctly removes the margin when inside a scroll wrapper */
 .table-scroll table { margin-bottom: 0; }
 
+/* Restock qty+button — flex row, used on both desktop and mobile */
+.restock-ctrl { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; }
+.restock-ctrl input  { width: 56px; flex: none; }
+.restock-ctrl button { flex: 1; }
+
 /* ── Order history rows ─────────────────────────────────────────────────── */
 .order-row-list    { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.2rem; }
 .order-day-heading {
@@ -529,6 +534,96 @@ footer.note { font-size: .75rem; color: var(--ink-soft); margin-top: .6rem; }
   .add-item-form { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .topbar { padding: .7rem 1rem; }
+}
+
+/* ── Inventory table: card layout on mobile ─────────────────────────────── */
+/*
+   On mobile the 10-column inventory table becomes a 2-column card grid.
+   Each <tr class="inv-row"> is a CSS grid card; each <td data-label="...">
+   gets a small-caps label via ::before. Named grid areas make the layout
+   explicit — Name/Category/Restock span both columns; Price+GST,
+   Mode+Stock, and Recipe+Delete sit side by side.
+*/
+@media (max-width: 640px) {
+  /* Hide the table header — labels come from data-label ::before */
+  .inv-table thead { display: none; }
+  .inv-table,
+  .inv-table tbody { display: block; }
+
+  /* Each item row becomes a 2-column card */
+  .inv-table tr.inv-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "name     name"
+      "cat      cat"
+      "price    gst"
+      "mode     stock"
+      "alert    alert"
+      "restock  restock"
+      "recipe   del";
+    gap: .55rem .75rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .85rem;
+    margin-bottom: .85rem;
+  }
+
+  /* Every cell: label on top, control below */
+  .inv-table td {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    border-bottom: none;
+    padding: 0;
+    white-space: normal;
+  }
+  .inv-table td::before {
+    content: attr(data-label);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .64rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-soft);
+  }
+
+  /* Inputs and selects fill their cell */
+  .inv-table td input,
+  .inv-table td select { width: 100%; box-sizing: border-box; }
+
+  /* Override desktop fixed widths inside card cells */
+  .inv-table td input.wide  { width: 100%; }
+  .inv-table td input[type="number"] { width: 100%; }
+
+  /* Named grid area assignments */
+  .inv-table td[data-label="Name"]     { grid-area: name; }
+  .inv-table td[data-label="Category"] { grid-area: cat; }
+  .inv-table td[data-label="Price ₹"]  { grid-area: price; }
+  .inv-table td[data-label="GST %"]    { grid-area: gst; }
+  .inv-table td[data-label="Mode"]     { grid-area: mode; }
+  .inv-table td[data-label="Stock"]    { grid-area: stock; }
+  .inv-table td[data-label="Alert at"] { grid-area: alert; }
+  .inv-table td[data-label="Restock"]  { grid-area: restock; }
+  .inv-table td[data-label="Recipe"]   { grid-area: recipe; }
+  .inv-table td[data-label=""]         { grid-area: del; }
+
+  /* Restock: inner restock-ctrl stays a flex row */
+  .inv-table td[data-label="Restock"] .restock-ctrl { width: 100%; }
+  .inv-table td[data-label="Restock"] .restock-ctrl input  { flex: 1; width: auto; }
+  .inv-table td[data-label="Restock"] .restock-ctrl button { flex: 2; }
+
+  /* Recipe + Delete buttons fill their grid cell */
+  .inv-table td[data-label="Recipe"] button,
+  .inv-table td[data-label=""]       button { width: 100%; }
+
+  /* No label prefix needed on the delete cell */
+  .inv-table td[data-label=""]::before { display: none; }
+
+  /* Recipe editor row — full width, no grid */
+  .inv-table tr.recipe-row { display: block; margin-bottom: .75rem; }
+  .inv-table tr.recipe-row td { display: block; padding: 0; }
+  .inv-table tr.recipe-row td::before { display: none; }
 }
 
 /* ── Reduce motion ─────────────────────────────────────────────────────── */
