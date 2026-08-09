@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canteen Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef0e7;
+    --bg-alt:#e2e5d7;
+    --ink:#1f231e;
+    --ink-soft:#5b6156;
+    --green-deep:#1f3b2c;
+    --green-mid:#2f5240;
+    --marigold:#e0a72e;
+    --marigold-dark:#b8841c;
+    --chili:#b23a2e;
+    --card:#fbfbf6;
+    --border:#d3d6c6;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(31,35,30,.07), 0 6px 16px rgba(31,35,30,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;}
+  button{font:inherit;cursor:pointer;}
+  input,select{font:inherit;}
+  h3,h4{font-family:'Archivo',sans-serif;}
+  button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible{outline:2px solid var(--marigold-dark);outline-offset:2px;}
+
+  .topbar{background:var(--green-deep);color:#fff;padding:.9rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;}
+  .brand{font-family:'Archivo',sans-serif;font-weight:800;letter-spacing:.03em;font-size:1.15rem;text-transform:uppercase;}
+  .brand .accent{color:var(--marigold);}
+  .today-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:.4rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:.82rem;}
+
+  .tabs{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:.2rem;padding:0 1.2rem;overflow-x:auto;position:sticky;top:0;z-index:10;}
+  .tab-btn{padding:.85rem 1rem;font-weight:600;color:var(--ink-soft);border:none;background:none;border-bottom:3px solid transparent;font-size:.92rem;white-space:nowrap;}
+  .tab-btn.active{color:var(--green-deep);border-bottom-color:var(--marigold);}
+
+  main{max-width:1080px;margin:0 auto;padding:1.2rem;}
+  .panel{animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+
+  .order-layout{display:flex;gap:1.2rem;align-items:flex-start;}
+  @media (max-width:780px){.order-layout{flex-direction:column;}}
+
+  #menuSearch{width:100%;padding:.6rem .8rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.6rem;background:var(--card);}
+
+  .category-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.7rem;}
+  .cat-chip{padding:.4rem .85rem;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:.8rem;font-weight:600;color:var(--ink-soft);}
+  .cat-chip.active{background:var(--green-mid);color:#fff;border-color:var(--green-mid);}
+
+  .menu-grid{flex:2;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:.7rem;align-content:start;}
+  .menu-section-heading{grid-column:1/-1;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;font-size:.72rem;letter-spacing:.06em;color:var(--ink-soft);border-bottom:1px solid var(--border);padding:.3rem 0;margin-top:.6rem;}
+  .menu-section-heading:first-child{margin-top:0;}
+  .menu-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.8rem;text-align:left;display:flex;flex-direction:column;gap:.3rem;align-items:flex-start;width:100%;transition:transform .12s,box-shadow .12s;}
+  .menu-card:not(:disabled):hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+  .menu-card:disabled{opacity:.45;cursor:not-allowed;}
+  .menu-card .name{font-weight:600;}
+  .menu-card .price{font-family:'IBM Plex Mono',monospace;color:var(--green-mid);}
+  .menu-card .stock{font-size:.74rem;color:var(--ink-soft);}
+  .menu-card .stock.low{color:var(--chili);font-weight:700;}
+
+  .ticket{flex:1;min-width:280px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);position:relative;margin-top:8px;}
+  .ticket::before{content:'';position:absolute;top:-7px;left:0;right:0;height:14px;background:radial-gradient(circle,var(--bg) 6px,transparent 6.5px);background-size:18px 14px;background-position:2px 0;}
+  .ticket-header{padding:1rem 1.1rem .3rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;font-size:.72rem;letter-spacing:.08em;color:var(--ink-soft);display:flex;justify-content:space-between;}
+  .ticket-token{font-weight:700;color:var(--green-deep);}
+  .edit-banner{margin:.4rem 1.1rem 0;background:#fdf3d7;border:1px solid var(--marigold);border-radius:8px;padding:.5rem .7rem;font-size:.78rem;}
+  .edit-banner button{color:var(--chili);background:none;border:none;text-decoration:underline;font-weight:600;padding:0;}
+  .ticket-items{padding:.3rem 1.1rem;display:flex;flex-direction:column;gap:.55rem;max-height:280px;overflow-y:auto;}
+  .ticket-line{display:flex;align-items:center;gap:.5rem;font-size:.88rem;}
+  .ticket-line .qty-ctrl{display:flex;align-items:center;gap:.3rem;font-family:'IBM Plex Mono',monospace;}
+  .ticket-line .qty-ctrl button{width:22px;height:22px;border-radius:5px;border:1px solid var(--border);background:#fff;line-height:1;}
+  .ticket-line .name{flex:1;}
+  .ticket-line .amt{font-family:'IBM Plex Mono',monospace;}
+  .ticket-line .remove{color:var(--chili);border:none;background:none;font-size:.85rem;padding:0 .2rem;}
+  .ticket-empty{color:var(--ink-soft);font-size:.85rem;padding:.4rem 0 1rem;}
+
+  .ticket-divider{border-top:1px dashed var(--border);margin:.6rem 1.1rem;}
+  .ticket-totals{padding:0 1.1rem;font-family:'IBM Plex Mono',monospace;font-size:.85rem;display:flex;flex-direction:column;gap:.25rem;}
+  .ticket-totals .row{display:flex;justify-content:space-between;color:var(--ink-soft);}
+  .ticket-totals .grand{font-size:1.2rem;font-weight:700;color:var(--green-deep);border-top:1px solid var(--border);padding-top:.5rem;margin-top:.2rem;}
+
+  .payment-row{display:flex;gap:.4rem;padding:.85rem 1.1rem 0;flex-wrap:wrap;}
+  .pay-chip{flex:1;min-width:64px;padding:.45rem;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:.78rem;text-align:center;}
+  .pay-chip.active{background:var(--green-deep);color:#fff;border-color:var(--green-deep);}
+  .customer-picker{padding:.6rem 1.1rem 0;}
+  .customer-picker select{width:100%;padding:.5rem;border:1px solid var(--border);border-radius:6px;background:#fff;}
+  .customer-picker .bal-note{font-size:.75rem;color:var(--ink-soft);margin-top:.3rem;}
+  .customer-picker .bal-note.negative{color:var(--chili);font-weight:600;}
+
+  .btn-primary{display:block;width:calc(100% - 2.2rem);margin:1rem 1.1rem .4rem;background:var(--marigold);color:var(--green-deep);font-weight:700;padding:.75rem;border:none;border-radius:8px;font-size:1rem;}
+  .btn-primary:not(:disabled):hover{background:var(--marigold-dark);}
+  .btn-primary:disabled{background:var(--border);color:var(--ink-soft);cursor:not-allowed;}
+  .btn-text{display:block;width:calc(100% - 2.2rem);margin:0 1.1rem 1rem;background:none;border:none;color:var(--ink-soft);text-decoration:underline;font-size:.8rem;padding:0;}
+  .undo-bar{margin:0 1.1rem 1rem;font-size:.78rem;color:var(--ink-soft);}
+  .undo-bar button{color:var(--chili);background:none;border:none;text-decoration:underline;font-weight:600;padding:0;}
+
+  .range-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+  .range-btn{padding:.5rem 1rem;border-radius:999px;border:1px solid var(--border);background:#fff;font-weight:600;font-size:.83rem;}
+  .range-btn.active{background:var(--green-deep);color:#fff;border-color:var(--green-deep);}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem;margin-bottom:1.2rem;}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem;}
+  .stat-card .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);}
+  .stat-card .value{font-family:'IBM Plex Mono',monospace;font-size:1.35rem;font-weight:700;color:var(--green-deep);margin-top:.25rem;}
+  .stat-card .sub{font-size:.72rem;color:var(--ink-soft);margin-top:.2rem;}
+
+  table.report-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.2rem;}
+  .report-table th,.report-table td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--border);font-size:.86rem;}
+  .report-table tr:last-child td{border-bottom:none;}
+  .report-table th{background:var(--bg-alt);font-family:'IBM Plex Mono',monospace;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);}
+  .report-table td.num{font-family:'IBM Plex Mono',monospace;text-align:right;}
+  .report-table td.low{color:var(--chili);font-weight:700;}
+  .report-table input{width:64px;padding:.3rem;border:1px solid var(--border);border-radius:5px;}
+  .report-table input.wide{width:130px;}
+  .report-table select{padding:.3rem;border:1px solid var(--border);border-radius:5px;background:#fff;}
+
+  .order-row-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.2rem;}
+  .order-day-heading{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;font-size:.72rem;letter-spacing:.06em;color:var(--ink-soft);border-bottom:1px solid var(--border);padding:.3rem 0;margin-top:.6rem;}
+  .order-row{display:flex;justify-content:space-between;align-items:center;gap:.8rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;font-size:.85rem;}
+  .order-row .meta{color:var(--ink-soft);font-size:.76rem;display:block;margin-top:.15rem;}
+  .order-row .amt{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--green-deep);white-space:nowrap;}
+  .order-edit{background:none;border:none;color:var(--green-mid);font-size:.74rem;text-decoration:underline;padding:0;white-space:nowrap;}
+  .order-delete{background:none;border:none;color:var(--chili);font-size:.74rem;text-decoration:underline;padding:0;white-space:nowrap;}
+
+  .add-item-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.7rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.2rem;align-items:end;}
+  .add-item-form label{font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:.25rem;}
+  .add-item-form input,.add-item-form select{width:100%;padding:.5rem;border:1px solid var(--border);border-radius:6px;background:#fff;}
+
+  .recipe-editor{background:var(--bg-alt);border:1px dashed var(--border);border-radius:8px;padding:.8rem;margin:.4rem 0 .8rem;}
+  .recipe-line{display:flex;gap:.4rem;align-items:center;margin-bottom:.4rem;flex-wrap:wrap;}
+  .recipe-line select{flex:1;min-width:140px;padding:.35rem;border:1px solid var(--border);border-radius:5px;background:#fff;}
+  .recipe-line input{width:80px;padding:.35rem;border:1px solid var(--border);border-radius:5px;}
+  .recipe-line .unit-label{font-size:.78rem;color:var(--ink-soft);min-width:44px;}
+  .recipe-line button{color:var(--chili);border:none;background:none;text-decoration:underline;font-size:.78rem;}
+  .setting-row{display:flex;align-items:center;gap:.5rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem;margin-bottom:1.2rem;font-size:.88rem;}
+  .setting-row input[type=checkbox]{width:18px;height:18px;}
+
+  .portions-badge{font-size:.72rem;color:var(--green-mid);}
+  .portions-badge.low{color:var(--chili);font-weight:700;}
+
+  .cust-balance{font-family:'IBM Plex Mono',monospace;font-weight:700;}
+  .cust-balance.negative{color:var(--chili);}
+  .cust-history{background:var(--bg-alt);border-radius:8px;padding:.6rem .8rem;margin:.3rem 0 .6rem;font-size:.78rem;}
+  .cust-history div{display:flex;justify-content:space-between;gap:.6rem;padding:.15rem 0;}
+  .cust-history .t-amt{font-family:'IBM Plex Mono',monospace;}
+
+  .empty-state{text-align:center;padding:2.2rem 1rem;color:var(--ink-soft);grid-column:1/-1;}
+
+  .toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(16px);background:var(--green-deep);color:#fff;padding:.6rem 1.1rem;border-radius:8px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:100;max-width:90vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  footer.note{font-size:.75rem;color:var(--ink-soft);margin-top:.6rem;}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Canteen <span class="accent">Register</span></div>
+  <div class="today-pill" id="todayPill">Loading…</div>
+</div>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="order" onclick="switchTab('order')">New Order</button>
+  <button class="tab-btn" data-tab="sales" onclick="switchTab('sales')">Sales &amp; GST</button>
+  <button class="tab-btn" data-tab="inventory" onclick="switchTab('inventory')">Inventory &amp; Menu</button>
+  <button class="tab-btn" data-tab="raw" onclick="switchTab('raw')">Raw Materials</button>
+  <button class="tab-btn" data-tab="customers" onclick="switchTab('customers')">Customers</button>
+</nav>
+
+<main>
+  <section id="panel-order" class="panel">
+    <div class="order-layout">
+      <div style="flex:2;min-width:240px;">
+        <div class="category-row" id="categoryChips" style="display:none;"></div>
+        <input type="text" id="menuSearch" placeholder="Search menu items…" oninput="renderMenuGrid()">
+        <div class="menu-grid" id="menuGrid"><div class="empty-state">Loading menu…</div></div>
+      </div>
+      <div class="ticket" id="ticket"></div>
+    </div>
+  </section>
+
+  <section id="panel-sales" class="panel" style="display:none;">
+    <div class="range-row" id="rangeRow">
+      <button class="range-btn active" data-range="today" onclick="loadRange('today')">Today</button>
+      <button class="range-btn" data-range="week" onclick="loadRange('week')">This Week</button>
+      <button class="range-btn" data-range="month" onclick="loadRange('month')">This Month</button>
+      <button class="range-btn" data-range="all" onclick="loadRange('all')">All Time</button>
+      <button class="range-btn" data-range="overview" onclick="loadRange('overview')">📊 Overview</button>
+      <button class="range-btn" style="margin-left:auto;" onclick="exportReport()">⬇ Export Excel</button>
+    </div>
+    <div id="salesContent">Loading…</div>
+    <footer class="note">GST split assumes intra-state sales (CGST + SGST charged equally). For inter-state billing you'd charge IGST instead — check with your CA on which applies, and on whether the composition scheme affects how you show tax on the bill.</footer>
+  </section>
+
+  <section id="panel-inventory" class="panel" style="display:none;">
+    <div id="inventoryContent">Loading…</div>
+  </section>
+
+  <section id="panel-raw" class="panel" style="display:none;">
+    <div id="rawContent">Loading…</div>
+  </section>
+
+  <section id="panel-customers" class="panel" style="display:none;">
+    <div id="customersContent">Loading…</div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ---------- State ----------
+let state = {
+  menu: [],
+  raw: [],
+  customers: [],
+  settings: { autoDeductRaw: true },
+  cart: [],
+  payment: 'Cash',
+  selectedCustomerId: '',
+  editing: null,           // original order object while editing, else null
+  recipeEditItemId: null,  // menu item id whose recipe editor is open
+  historyOpenCustomerId: null,
+  activeTab: 'order',
+  activeRange: 'today',
+  activeCategory: 'All',
+  today: null,
+  _currentAgg: null,
+};
+
+// ---------- Utilities ----------
+const fmt = n => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(n||0);
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(p){ return (p||'I')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function fmtDate(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function todayStr(){ return fmtDate(new Date()); }
+function dayKey(d){ return `day:${d}`; }
+function emptyDay(dateStr){ return {date:dateStr, orders:[], taxable:0, gst:0, total:0, count:0, nextToken:1}; }
+function ensureNextToken(day){
+  if(day.nextToken===undefined || day.nextToken===null){
+    day.nextToken = day.orders.reduce((max,o)=>Math.max(max, o.token||0), 0) + 1;
+  }
+  return day;
+}
+function dateFromOrderId(id){
+  const i = id.lastIndexOf('-');
+  return i>-1 ? id.slice(0,i) : null;
+}
+function emptyOverall(){ return {taxable:0, gst:0, total:0, count:0, byItem:{}}; }
+function round2(n){ return Math.round(n*100)/100; }
+function niceDate(dStr){
+  const [y,m,d] = dStr.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+}
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function confirmAction(btn, action){
+  if(btn.dataset.confirm==='1'){
+    btn.dataset.confirm='0';
+    action();
+  } else {
+    const orig = btn.textContent;
+    btn.dataset.confirm='1';
+    btn.dataset.orig = orig;
+    btn.textContent = 'Click again to confirm';
+    setTimeout(()=>{ if(btn.dataset.confirm==='1'){ btn.dataset.confirm='0'; btn.textContent=btn.dataset.orig; } }, 4000);
+  }
+}
+
+// ---------- Storage (browser localStorage — data lives on this PC, in this browser) ----------
+async function dbGet(key){
+  try{
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : null;
+  }catch(e){ return null; }
+}
+async function dbSet(key, value){
+  try{
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  }catch(e){ console.error('storage set failed', key, e); showToast('Could not save — your browser storage may be full or disabled'); return false; }
+}
+async function dbDelete(key){
+  try{ localStorage.removeItem(key); }catch(e){ /* ignore */ }
+}
+
+// ---------- Init ----------
+async function init(){
+  state.menu = (await dbGet('menu-items')) || [];
+  state.raw = (await dbGet('raw-materials')) || [];
+  state.customers = (await dbGet('customers')) || [];
+  const settings = await dbGet('app-settings');
+  if(settings) state.settings = Object.assign({autoDeductRaw:true}, settings);
+  const dStr = todayStr();
+  const day = await dbGet(dayKey(dStr));
+  state.today = ensureNextToken(day || emptyDay(dStr));
+  renderAll();
+  setInterval(refreshTodayIfNeeded, 60000);
+}
+async function refreshTodayIfNeeded(){
+  const dStr = todayStr();
+  if(state.today.date !== dStr){
+    const day = await dbGet(dayKey(dStr));
+    state.today = ensureNextToken(day || emptyDay(dStr));
+    renderAll();
+  }
+}
+
+function renderAll(){
+  renderTodayPill();
+  renderMenuGrid();
+  renderCart();
+  if(state.activeTab==='inventory') renderInventoryTab();
+  if(state.activeTab==='raw') renderRawTab();
+  if(state.activeTab==='customers') renderCustomersTab();
+  if(state.activeTab==='sales') loadRange(state.activeRange);
+}
+
+// ---------- Tabs ----------
+function switchTab(tab){
+  state.activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  ['order','sales','inventory','raw','customers'].forEach(t=>{
+    document.getElementById('panel-'+t).style.display = tab===t ? 'block' : 'none';
+  });
+  if(tab==='sales') loadRange(state.activeRange);
+  if(tab==='inventory') renderInventoryTab();
+  if(tab==='raw') renderRawTab();
+  if(tab==='customers') renderCustomersTab();
+}
+
+// ---------- Today pill ----------
+function renderTodayPill(){
+  document.getElementById('todayPill').textContent =
+    `Today · ${fmt(state.today.total)} · ${state.today.count} order${state.today.count===1?'':'s'}`;
+}
+
+// ---------- Categories ----------
+const PRESET_CATEGORIES = ['Veg Snacks','Non-Veg Snacks','Combos','Beverages','Desserts','Other'];
+
+function getUsedCategories(){
+  const set = new Set(state.menu.map(m=>m.category || 'Uncategorized'));
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+function allKnownCategories(){
+  const used = state.menu.map(m=>m.category).filter(Boolean);
+  return Array.from(new Set([...PRESET_CATEGORIES, ...used])).sort((a,b)=>a.localeCompare(b));
+}
+function setActiveCategory(cat){
+  state.activeCategory = cat;
+  renderMenuGrid();
+}
+function renderCategoryChips(){
+  const row = document.getElementById('categoryChips');
+  if(!row) return;
+  const cats = getUsedCategories();
+  if(cats.length<=1){ row.style.display='none'; row.innerHTML=''; return; }
+  if(state.activeCategory!=='All' && !cats.includes(state.activeCategory)) state.activeCategory='All';
+  row.style.display='flex';
+  const chips = ['All', ...cats];
+  row.innerHTML = chips.map(c=>
+    `<button class="cat-chip ${state.activeCategory===c?'active':''}" data-category="${escapeHtml(c)}">${escapeHtml(c)}</button>`
+  ).join('');
+  row.querySelectorAll('.cat-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=> setActiveCategory(btn.dataset.category));
+  });
+}
+
+// ---------- Raw materials helpers ----------
+function rawById(id){ return state.raw.find(r=>r.id===id); }
+function itemRecipe(item){ return (item.recipe||[]).filter(l=>rawById(l.rawId)); }
+function portionsPossible(item){
+  const recipe = itemRecipe(item);
+  if(recipe.length===0) return null;
+  let min = Infinity;
+  recipe.forEach(l=>{
+    const raw = rawById(l.rawId);
+    if(!raw || l.qty<=0) return;
+    min = Math.min(min, Math.floor(Math.max(0,raw.stock)/l.qty));
+  });
+  return min===Infinity ? null : min;
+}
+function isAutoStock(item){
+  return item.stockMode==='auto' && itemRecipe(item).length>0;
+}
+function effectiveStock(item){
+  if(isAutoStock(item)){
+    const p = portionsPossible(item);
+    return p===null ? 0 : p;
+  }
+  return item.stock;
+}
+function computeRawUsage(cartLines){
+  // returns [{rawId, qty}] aggregated across items
+  // auto-stock items ALWAYS consume raw materials (that IS their stock);
+  // manual-stock items consume raw only when the global auto-deduct setting is on
+  const usage = {};
+  cartLines.forEach(l=>{
+    const item = state.menu.find(m=>m.id===l.id);
+    if(!item) return;
+    if(!isAutoStock(item) && !state.settings.autoDeductRaw) return;
+    itemRecipe(item).forEach(r=>{
+      usage[r.rawId] = (usage[r.rawId]||0) + r.qty*l.qty;
+    });
+  });
+  return Object.entries(usage).map(([rawId, qty])=>({rawId, qty:round2(qty)}));
+}
+
+// ---------- Customers helpers ----------
+function customerById(id){ return state.customers.find(c=>c.id===id); }
+function customerLabel(c){
+  const ph = c.phone ? ` (…${String(c.phone).slice(-4)})` : '';
+  return `${c.name}${ph}`;
+}
+async function adjustCustomerBalance(customerId, delta, type, note){
+  const c = customerById(customerId);
+  if(!c) return;
+  c.balance = round2(c.balance + delta);
+  c.history = c.history || [];
+  c.history.unshift({time:new Date().toISOString(), type, amount:round2(delta), note:note||''});
+  if(c.history.length>40) c.history.length = 40;
+  await dbSet('customers', state.customers);
+}
+
+// ---------- Menu grid ----------
+function renderMenuCard(m){
+  const inCart = state.cart.find(c=>c.id===m.id);
+  const avail = effectiveStock(m);
+  const remaining = avail - (inCart?inCart.qty:0);
+  const out = remaining<=0;
+  const low = !out && remaining<=m.threshold;
+  const auto = isAutoStock(m);
+  return `<button class="menu-card" ${out?'disabled':''} onclick="addToCart('${m.id}')">
+    <div class="name">${escapeHtml(m.name)}</div>
+    <div class="price">${fmt(m.price)}${m.unit?` / ${escapeHtml(m.unit)}`:''}</div>
+    <div class="stock ${low?'low':''}">${out?(auto?'No raw stock':'Out of stock'):`${remaining} ${auto?'possible':'left'}`}</div>
+  </button>`;
+}
+
+function renderMenuGrid(){
+  renderCategoryChips();
+  const q = (document.getElementById('menuSearch')?.value || '').toLowerCase();
+  const grid = document.getElementById('menuGrid');
+  if(state.menu.length===0){
+    grid.innerHTML = `<div class="empty-state">No menu items yet.<br><button class="btn-primary" style="width:auto;display:inline-block;margin:.8rem 0 0;" onclick="switchTab('inventory')">Add your first item</button></div>`;
+    return;
+  }
+  let items = state.menu.filter(m=>m.name.toLowerCase().includes(q));
+  if(state.activeCategory!=='All'){
+    items = items.filter(m=>(m.category||'Uncategorized')===state.activeCategory);
+  }
+  if(items.length===0){
+    const where = state.activeCategory!=='All' ? ` in ${escapeHtml(state.activeCategory)}` : '';
+    grid.innerHTML = `<div class="empty-state">No items match${q?` "${escapeHtml(q)}"`:''}${where}.</div>`;
+    return;
+  }
+  if(state.activeCategory==='All'){
+    const cats = getUsedCategories();
+    let html = '';
+    cats.forEach(cat=>{
+      const catItems = items.filter(m=>(m.category||'Uncategorized')===cat);
+      if(catItems.length===0) return;
+      html += `<div class="menu-section-heading">${escapeHtml(cat)}</div>`;
+      html += catItems.map(renderMenuCard).join('');
+    });
+    grid.innerHTML = html;
+  } else {
+    grid.innerHTML = items.map(renderMenuCard).join('');
+  }
+}
+
+function flashStockWarning(itemId){
+  const item = state.menu.find(m=>m.id===itemId);
+  if(!item){ showToast('Not enough stock'); return; }
+  showToast(isAutoStock(item) ? `Raw materials only allow ${effectiveStock(item)} more ${item.name}` : `Only ${item.stock} ${item.name} left in stock`);
+}
+
+// ---------- Cart ----------
+function addToCart(itemId){
+  const item = state.menu.find(m=>m.id===itemId);
+  if(!item) return;
+  const line = state.cart.find(c=>c.id===itemId);
+  const currentQty = line ? line.qty : 0;
+  if(effectiveStock(item) - currentQty <= 0){ flashStockWarning(itemId); return; }
+  if(line) line.qty++; else state.cart.push({id:item.id, name:item.name, price:item.price, gst:item.gst, qty:1});
+  renderCart(); renderMenuGrid();
+}
+function changeQty(itemId, delta){
+  const line = state.cart.find(c=>c.id===itemId);
+  if(!line) return;
+  const item = state.menu.find(m=>m.id===itemId);
+  const newQty = line.qty + delta;
+  if(newQty<=0){ state.cart = state.cart.filter(c=>c.id!==itemId); }
+  else if(item && newQty>effectiveStock(item)){ flashStockWarning(itemId); return; }
+  else line.qty = newQty;
+  renderCart(); renderMenuGrid();
+}
+function removeLine(itemId){ state.cart = state.cart.filter(c=>c.id!==itemId); renderCart(); renderMenuGrid(); }
+function clearCart(){ state.cart = []; renderCart(); renderMenuGrid(); }
+function setPayment(p){ state.payment = p; renderCart(); }
+function setSelectedCustomer(id){ state.selectedCustomerId = id; renderCart(); }
+
+function cartTotals(){
+  let total=0, taxable=0;
+  state.cart.forEach(l=>{
+    const lineTotal = l.price*l.qty;
+    total += lineTotal;
+    taxable += lineTotal/(1+l.gst/100);
+  });
+  const gst = total-taxable;
+  return {total, taxable, gst, cgst:gst/2, sgst:gst/2};
+}
+
+function renderCart(){
+  const t = document.getElementById('ticket');
+  const totals = cartTotals();
+  const token = state.editing ? state.editing.token : state.today.nextToken;
+  const linesHtml = state.cart.length ? state.cart.map(l=>`
+    <div class="ticket-line">
+      <div class="qty-ctrl">
+        <button onclick="changeQty('${l.id}',-1)">−</button>
+        <span>${l.qty}</span>
+        <button onclick="changeQty('${l.id}',1)">+</button>
+      </div>
+      <div class="name">${escapeHtml(l.name)}</div>
+      <div class="amt">${fmt(l.price*l.qty)}</div>
+      <button class="remove" onclick="removeLine('${l.id}')">✕</button>
+    </div>`).join('') : `<p class="ticket-empty">Tap a menu item to add it to this order.</p>`;
+
+  const payChips = ['Cash','UPI','Card','Account'].map(p=>
+    `<button class="pay-chip ${state.payment===p?'active':''}" onclick="setPayment('${p}')">${p}</button>`
+  ).join('');
+
+  let customerPicker = '';
+  if(state.payment==='Account'){
+    if(state.customers.length===0){
+      customerPicker = `<div class="customer-picker"><div class="bal-note">No customers yet — add them in the Customers tab first.</div></div>`;
+    } else {
+      const opts = state.customers.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>
+        `<option value="${c.id}" ${state.selectedCustomerId===c.id?'selected':''}>${escapeHtml(customerLabel(c))} — ${fmt(c.balance)}</option>`
+      ).join('');
+      const sel = customerById(state.selectedCustomerId);
+      let balNote = '';
+      if(sel){
+        const after = round2(sel.balance - totals.total);
+        balNote = `<div class="bal-note ${after<0?'negative':''}">Balance after this order: ${fmt(after)}${after<0?' (goes into due)':''}</div>`;
+      }
+      customerPicker = `<div class="customer-picker">
+        <select onchange="setSelectedCustomer(this.value)">
+          <option value="">— Select customer —</option>
+          ${opts}
+        </select>
+        ${balNote}
+      </div>`;
+    }
+  }
+
+  const editBanner = state.editing ? `<div class="edit-banner">✏️ Editing Token #${state.editing.token} (${niceDate(dateFromOrderId(state.editing.id))}). Complete to save changes, or <button onclick="cancelEdit()">cancel and restore original</button>.</div>` : '';
+
+  const lastOrder = state.today.orders[state.today.orders.length-1];
+  const undoHtml = (!state.editing && lastOrder) ? `<div class="undo-bar">Last: Token #${lastOrder.token} · ${fmt(lastOrder.total)} — <button onclick="deleteOrder('${lastOrder.id}')">Undo</button></div>` : '';
+
+  t.innerHTML = `
+    <div class="ticket-header"><span>${state.editing?'Editing Order':'Order Ticket'}</span><span class="ticket-token">Token #${token}</span></div>
+    ${editBanner}
+    <div class="ticket-items">${linesHtml}</div>
+    <div class="ticket-divider"></div>
+    <div class="ticket-totals">
+      <div class="row"><span>Taxable Value</span><span>${fmt(totals.taxable)}</span></div>
+      <div class="row"><span>CGST</span><span>${fmt(totals.cgst)}</span></div>
+      <div class="row"><span>SGST</span><span>${fmt(totals.sgst)}</span></div>
+      <div class="row grand"><span>Total</span><span>${fmt(totals.total)}</span></div>
+    </div>
+    <div class="payment-row">${payChips}</div>
+    ${customerPicker}
+    <button class="btn-primary" ${state.cart.length===0?'disabled':''} onclick="completeOrder()">${state.editing?'Save changes':'Complete order'}</button>
+    <button class="btn-text" onclick="clearCart()">Clear ticket</button>
+    ${undoHtml}
+  `;
+}
+
+// ---------- Order record engine (shared by complete / delete / edit) ----------
+async function addOrderRecord(order){
+  const dateStr = dateFromOrderId(order.id);
+  let dayRecord = (dateStr === state.today.date) ? state.today : ensureNextToken((await dbGet(dayKey(dateStr))) || emptyDay(dateStr));
+
+  dayRecord.orders.push(order);
+  dayRecord.orders.sort((a,b)=>a.token-b.token);
+  dayRecord.taxable = round2(dayRecord.taxable + order.taxable);
+  dayRecord.gst = round2(dayRecord.gst + order.gst);
+  dayRecord.total = round2(dayRecord.total + order.total);
+  dayRecord.count += 1;
+  dayRecord.nextToken = Math.max(dayRecord.nextToken, order.token + 1);
+  await dbSet(dayKey(dateStr), dayRecord);
+  if(dateStr === state.today.date) state.today = dayRecord;
+
+  // finished-goods stock (auto-stock items are tracked via raw materials instead)
+  order.items.forEach(it=>{
+    if(it.autoStock) return;
+    const item = state.menu.find(m=>m.id===it.id);
+    if(item) item.stock = Math.max(0, item.stock - it.qty);
+  });
+  await dbSet('menu-items', state.menu);
+
+  // raw materials
+  if(order.rawUsage && order.rawUsage.length){
+    order.rawUsage.forEach(u=>{
+      const raw = rawById(u.rawId);
+      if(raw) raw.stock = round2(raw.stock - u.qty);
+    });
+    await dbSet('raw-materials', state.raw);
+  }
+
+  // customer account
+  if(order.payment==='Account' && order.customerId){
+    await adjustCustomerBalance(order.customerId, -order.total, 'purchase', `Token #${order.token} (${dateStr})`);
+  }
+
+  // dates index + overall
+  let dates = await dbGet('all-dates') || [];
+  if(!dates.includes(dateStr)){ dates.push(dateStr); await dbSet('all-dates', dates); }
+
+  let overall = await dbGet('overall-summary') || emptyOverall();
+  overall.taxable = round2(overall.taxable + order.taxable);
+  overall.gst = round2(overall.gst + order.gst);
+  overall.total = round2(overall.total + order.total);
+  overall.count += 1;
+  order.items.forEach(it=>{
+    if(!overall.byItem[it.id]) overall.byItem[it.id] = {name:it.name, qty:0, revenue:0};
+    overall.byItem[it.id].qty += it.qty;
+    overall.byItem[it.id].revenue = round2(overall.byItem[it.id].revenue + it.lineTotal);
+  });
+  await dbSet('overall-summary', overall);
+}
+
+async function removeOrderRecord(orderId){
+  const dateStr = dateFromOrderId(orderId);
+  if(!dateStr) return null;
+
+  let dayRecord = (dateStr === state.today.date) ? state.today : await dbGet(dayKey(dateStr));
+  if(!dayRecord) return null;
+
+  const idx = dayRecord.orders.findIndex(o=>o.id===orderId);
+  if(idx===-1) return null;
+  const removed = dayRecord.orders[idx];
+
+  dayRecord.orders.splice(idx, 1);
+  dayRecord.taxable = round2(dayRecord.taxable - removed.taxable);
+  dayRecord.gst = round2(dayRecord.gst - removed.gst);
+  dayRecord.total = round2(dayRecord.total - removed.total);
+  dayRecord.count = Math.max(0, dayRecord.count - 1);
+  ensureNextToken(dayRecord);
+  await dbSet(dayKey(dateStr), dayRecord);
+  if(dateStr === state.today.date) state.today = dayRecord;
+
+  removed.items.forEach(it=>{
+    if(it.autoStock) return;
+    const item = state.menu.find(m=>m.id===it.id);
+    if(item) item.stock += it.qty;
+  });
+  await dbSet('menu-items', state.menu);
+
+  if(removed.rawUsage && removed.rawUsage.length){
+    removed.rawUsage.forEach(u=>{
+      const raw = rawById(u.rawId);
+      if(raw) raw.stock = round2(raw.stock + u.qty);
+    });
+    await dbSet('raw-materials', state.raw);
+  }
+
+  if(removed.payment==='Account' && removed.customerId){
+    await adjustCustomerBalance(removed.customerId, removed.total, 'refund', `Token #${removed.token} (${dateStr}) reversed`);
+  }
+
+  let overall = await dbGet('overall-summary') || emptyOverall();
+  overall.taxable = round2(overall.taxable - removed.taxable);
+  overall.gst = round2(overall.gst - removed.gst);
+  overall.total = round2(overall.total - removed.total);
+  overall.count = Math.max(0, overall.count - 1);
+  removed.items.forEach(it=>{
+    if(overall.byItem[it.id]){
+      overall.byItem[it.id].qty -= it.qty;
+      overall.byItem[it.id].revenue = round2(overall.byItem[it.id].revenue - it.lineTotal);
+      if(overall.byItem[it.id].qty<=0) delete overall.byItem[it.id];
+    }
+  });
+  await dbSet('overall-summary', overall);
+
+  return removed;
+}
+
+// ---------- Orders ----------
+async function completeOrder(){
+  if(state.cart.length===0) return;
+
+  if(state.payment==='Account'){
+    const cust = customerById(state.selectedCustomerId);
+    if(!cust){ showToast('Select a customer for account payment'); return; }
+  }
+
+  const totals = cartTotals();
+  const dStr = state.editing ? dateFromOrderId(state.editing.id) : todayStr();
+  if(!state.editing && state.today.date !== dStr) state.today = emptyDay(dStr);
+
+  const token = state.editing ? state.editing.token : state.today.nextToken;
+  const cust = state.payment==='Account' ? customerById(state.selectedCustomerId) : null;
+
+  const order = {
+    id: state.editing ? state.editing.id : `${dStr}-${token}`,
+    token,
+    time: state.editing ? state.editing.time : new Date().toISOString(),
+    editedAt: state.editing ? new Date().toISOString() : undefined,
+    items: state.cart.map(l=>{
+      const menuItem = state.menu.find(m=>m.id===l.id);
+      return {id:l.id, name:l.name, qty:l.qty, price:l.price, gst:l.gst, lineTotal:round2(l.price*l.qty), autoStock: menuItem ? isAutoStock(menuItem) : false};
+    }),
+    taxable: round2(totals.taxable),
+    gst: round2(totals.gst),
+    total: round2(totals.total),
+    payment: state.payment,
+    customerId: cust ? cust.id : undefined,
+    customerName: cust ? cust.name : undefined,
+    rawUsage: computeRawUsage(state.cart)
+  };
+
+  const wasEditing = !!state.editing;
+  await addOrderRecord(order);
+
+  state.cart = [];
+  state.payment = 'Cash';
+  state.selectedCustomerId = '';
+  state.editing = null;
+  renderAll();
+  showToast(wasEditing ? `Token #${token} updated` : `Token #${token} · ${fmt(order.total)} saved`);
+}
+
+async function deleteOrder(orderId){
+  const removed = await removeOrderRecord(orderId);
+  if(!removed){ showToast('Could not find that order'); return; }
+  renderAll();
+  showToast(`Token #${removed.token} removed`);
+}
+
+async function startEditOrder(orderId){
+  if(state.editing){ showToast('Finish or cancel the current edit first'); return; }
+  const removed = await removeOrderRecord(orderId);
+  if(!removed){ showToast('Could not find that order'); return; }
+  state.editing = removed;
+  state.cart = removed.items.map(it=>({id:it.id, name:it.name, price:it.price, gst:it.gst, qty:it.qty}));
+  state.payment = removed.payment;
+  state.selectedCustomerId = removed.customerId || '';
+  switchTab('order');
+  renderAll();
+  showToast(`Editing Token #${removed.token} — make changes, then Save`);
+}
+
+async function cancelEdit(){
+  if(!state.editing) return;
+  const original = state.editing;
+  state.editing = null;
+  state.cart = [];
+  state.payment = 'Cash';
+  state.selectedCustomerId = '';
+  await addOrderRecord(original);
+  renderAll();
+  showToast(`Token #${original.token} restored unchanged`);
+}
+
+// ---------- Inventory & Menu ----------
+async function addMenuItem(data){
+  const item = {
+    id: uid('I'),
+    name: data.name,
+    category: data.category || 'Uncategorized',
+    price: +data.price || 0,
+    gst: +data.gst || 0,
+    stock: +data.stock || 0,
+    stockMode: 'manual',
+    threshold: +data.threshold || 5,
+    unit: data.unit || '',
+    recipe: []
+  };
+  state.menu.push(item);
+  await dbSet('menu-items', state.menu);
+  renderAll();
+  showToast(`${item.name} added — set its recipe to track stock from raw materials, or manage stock manually`);
+}
+function submitNewItem(){
+  const name = document.getElementById('newName').value.trim();
+  const price = document.getElementById('newPrice').value;
+  if(!name || !price){ showToast('Enter a name and price first'); return; }
+  addMenuItem({
+    name, price,
+    category: document.getElementById('newCategory').value.trim(),
+    gst: document.getElementById('newGst').value,
+    stock: document.getElementById('newStock').value,
+    threshold: document.getElementById('newThreshold').value,
+    unit: document.getElementById('newUnit').value.trim()
+  });
+}
+async function updateMenuItem(id, field, value){
+  const item = state.menu.find(m=>m.id===id);
+  if(!item) return;
+  item[field] = (field==='name' || field==='unit' || field==='category') ? value : +value;
+  await dbSet('menu-items', state.menu);
+  renderMenuGrid();
+  renderInventoryTab();
+}
+async function restock(id, qty){
+  if(!qty || qty<=0){ showToast('Enter a quantity to add'); return; }
+  const item = state.menu.find(m=>m.id===id);
+  if(!item) return;
+  item.stock += qty;
+  await dbSet('menu-items', state.menu);
+  renderAll();
+  showToast(`${item.name}: +${qty} stock`);
+}
+async function setStock(id, value){
+  const item = state.menu.find(m=>m.id===id);
+  if(!item) return;
+  const v = +value;
+  if(isNaN(v) || v<0){ showToast('Enter a valid stock number'); return; }
+  item.stock = v;
+  await dbSet('menu-items', state.menu);
+  renderAll();
+  showToast(`${item.name}: stock set to ${v}`);
+}
+async function setStockMode(id, mode){
+  const item = state.menu.find(m=>m.id===id);
+  if(!item) return;
+  if(mode==='auto' && itemRecipe(item).length===0){
+    showToast('Add a recipe first — auto stock is calculated from raw materials');
+    renderInventoryTab();
+    return;
+  }
+  item.stockMode = mode;
+  await dbSet('menu-items', state.menu);
+  renderAll();
+  showToast(mode==='auto' ? `${item.name}: stock now tracked from raw materials` : `${item.name}: stock now manual`);
+}
+async function deleteMenuItem(id){
+  state.menu = state.menu.filter(m=>m.id!==id);
+  if(state.recipeEditItemId===id) state.recipeEditItemId = null;
+  await dbSet('menu-items', state.menu);
+  renderAll();
+}
+async function resetAllData(){
+  const dates = await dbGet('all-dates') || [];
+  await Promise.all(dates.map(d=>dbDelete(dayKey(d))));
+  await dbDelete('all-dates');
+  await dbDelete('overall-summary');
+  await dbDelete('menu-items');
+  await dbDelete('raw-materials');
+  await dbDelete('customers');
+  state.menu = [];
+  state.raw = [];
+  state.customers = [];
+  state.cart = [];
+  state.editing = null;
+  state.today = emptyDay(todayStr());
+  renderAll();
+  showToast('All data cleared');
+}
+
+// ---------- Recipe editor ----------
+function toggleRecipeEditor(itemId){
+  state.recipeEditItemId = state.recipeEditItemId===itemId ? null : itemId;
+  renderInventoryTab();
+}
+async function addRecipeLine(itemId){
+  const item = state.menu.find(m=>m.id===itemId);
+  if(!item) return;
+  if(state.raw.length===0){ showToast('Add raw materials first (Raw Materials tab)'); return; }
+  item.recipe = item.recipe || [];
+  const usedIds = item.recipe.map(l=>l.rawId);
+  const firstUnused = state.raw.find(r=>!usedIds.includes(r.id)) || state.raw[0];
+  item.recipe.push({rawId:firstUnused.id, qty:0});
+  await dbSet('menu-items', state.menu);
+  renderInventoryTab();
+}
+async function updateRecipeLine(itemId, index, field, value){
+  const item = state.menu.find(m=>m.id===itemId);
+  if(!item || !item.recipe || !item.recipe[index]) return;
+  if(field==='rawId') item.recipe[index].rawId = value;
+  else item.recipe[index].qty = Math.max(0, +value || 0);
+  await dbSet('menu-items', state.menu);
+  renderInventoryTab();
+}
+async function removeRecipeLine(itemId, index){
+  const item = state.menu.find(m=>m.id===itemId);
+  if(!item || !item.recipe) return;
+  item.recipe.splice(index,1);
+  if(item.stockMode==='auto' && item.recipe.length===0) item.stockMode='manual';
+  await dbSet('menu-items', state.menu);
+  renderInventoryTab();
+}
+async function addFromMenuItem(itemId, sourceId, qty){
+  const item = state.menu.find(m=>m.id===itemId);
+  const source = state.menu.find(m=>m.id===sourceId);
+  if(!item || !source){ showToast('Pick an item to copy ingredients from'); return; }
+  if(source.id===item.id){ showToast("An item can't use itself as an ingredient"); return; }
+  const sourceRecipe = itemRecipe(source);
+  if(sourceRecipe.length===0){ showToast(`${source.name} doesn't have a recipe yet`); return; }
+  const multiplier = Math.max(0.01, +qty || 1);
+  item.recipe = item.recipe || [];
+  sourceRecipe.forEach(line=>{
+    const addQty = round2(line.qty * multiplier);
+    const existing = item.recipe.find(l=>l.rawId===line.rawId);
+    if(existing) existing.qty = round2(existing.qty + addQty);
+    else item.recipe.push({rawId:line.rawId, qty:addQty});
+  });
+  await dbSet('menu-items', state.menu);
+  renderInventoryTab();
+  showToast(`Copied ${source.name}'s ingredients${multiplier!==1?` (×${multiplier})`:''} into ${item.name}'s recipe`);
+}
+
+function renderRecipeEditor(item){
+  const lines = (item.recipe||[]).map((l,i)=>{
+    const opts = state.raw.map(r=>`<option value="${r.id}" ${l.rawId===r.id?'selected':''}>${escapeHtml(r.name)}</option>`).join('');
+    const raw = rawById(l.rawId);
+    return `<div class="recipe-line">
+      <select onchange="updateRecipeLine('${item.id}',${i},'rawId',this.value)">${opts}</select>
+      <input type="number" min="0" step="any" value="${l.qty}" onchange="updateRecipeLine('${item.id}',${i},'qty',this.value)">
+      <span class="unit-label">${raw?escapeHtml(raw.unit):''} / portion</span>
+      <button onclick="removeRecipeLine('${item.id}',${i})">remove</button>
+    </div>`;
+  }).join('');
+  const portions = portionsPossible(item);
+  const modeHint = (portions!==null && !isAutoStock(item))
+    ? `<div style="font-size:.8rem;margin-top:.4rem;">Stock is currently manual. <button style="font-size:.8rem;text-decoration:underline;border:none;background:none;color:var(--green-mid);padding:0;" onclick="setStockMode('${item.id}','auto')">Switch to auto — track stock from raw materials</button></div>`
+    : '';
+  const sourceOptions = state.menu.filter(m=>m.id!==item.id && itemRecipe(m).length>0);
+  const autofillHtml = sourceOptions.length ? `
+    <div style="margin-top:.7rem;padding-top:.6rem;border-top:1px dashed var(--border);">
+      <strong style="font-size:.78rem;">Auto-fill from another menu item</strong>
+      <div class="recipe-line" style="margin-top:.4rem;">
+        <select id="autofillSrc-${item.id}">
+          ${sourceOptions.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('')}
+        </select>
+        <input type="number" min="0.01" step="any" value="1" id="autofillQty-${item.id}" title="How many of this item go into one portion of the combo">
+        <span class="unit-label">× qty</span>
+        <button onclick="addFromMenuItem('${item.id}', document.getElementById('autofillSrc-${item.id}').value, document.getElementById('autofillQty-${item.id}').value)">Add ingredients</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--ink-soft);margin-top:.2rem;">Copies that item's ingredients in — a one-time copy, not a live link, so editing the original later won't change this combo.</div>
+    </div>` : '';
+  return `<div class="recipe-editor">
+    <strong style="font-size:.82rem;">Recipe for ${escapeHtml(item.name)} (per 1 portion)</strong>
+    <div style="margin:.5rem 0;">${lines || '<span style="font-size:.8rem;color:var(--ink-soft);">No ingredients yet.</span>'}</div>
+    <button onclick="addRecipeLine('${item.id}')" style="font-size:.8rem;">+ Add ingredient</button>
+    ${portions!==null?`<div style="font-size:.8rem;margin-top:.5rem;" class="portions-badge ${portions<=5?'low':''}">Raw stock allows ~${portions} portion${portions===1?'':'s'}</div>`:''}
+    ${modeHint}
+    ${autofillHtml}
+  </div>`;
+}
+
+function renderInventoryTab(){
+  const c = document.getElementById('inventoryContent');
+  const catOptions = allKnownCategories().map(cat=>`<option value="${escapeHtml(cat)}">`).join('');
+  const rows = state.menu.map(m=>{
+    const recipeCount = itemRecipe(m).length;
+    const portions = portionsPossible(m);
+    const portionsHtml = portions!==null ? `<div class="portions-badge ${portions<=5?'low':''}">~${portions} portions from raw</div>` : '';
+    const auto = isAutoStock(m);
+    const avail = effectiveStock(m);
+    const stockCell = auto
+      ? `<span class="${avail<=m.threshold?'low':''}" style="font-family:'IBM Plex Mono',monospace;">${avail}</span> <span class="portions-badge">from raw</span>`
+      : `<input type="number" min="0" value="${m.stock}" onchange="setStock('${m.id}', this.value)" title="Type a number to set exact stock">${m.unit?(' '+escapeHtml(m.unit)):''}`;
+    const stockCtrl = auto
+      ? `<span style="font-size:.74rem;color:var(--ink-soft);">buy raw materials to increase</span>`
+      : `<input type="number" min="1" placeholder="Qty" id="restock-${m.id}" style="width:56px;">
+        <button onclick="restock('${m.id}', +document.getElementById('restock-${m.id}').value)">+ Add</button>`;
+    const mainRow = `
+    <tr>
+      <td><input class="wide" value="${escapeHtml(m.name)}" onchange="updateMenuItem('${m.id}','name',this.value)">${portionsHtml}</td>
+      <td><input class="wide" list="categoryList" value="${escapeHtml(m.category||'Uncategorized')}" onchange="updateMenuItem('${m.id}','category',this.value)"></td>
+      <td><input type="number" min="0" step="0.5" value="${m.price}" onchange="updateMenuItem('${m.id}','price',this.value)"></td>
+      <td><input type="number" min="0" max="28" value="${m.gst}" onchange="updateMenuItem('${m.id}','gst',this.value)"></td>
+      <td>
+        <select onchange="setStockMode('${m.id}', this.value)" title="Manual: you type the count. From recipe: calculated from raw materials.">
+          <option value="manual" ${!auto?'selected':''}>Manual</option>
+          <option value="auto" ${auto?'selected':''}>From recipe</option>
+        </select>
+      </td>
+      <td class="${(!auto && m.stock<=m.threshold)?'low':''}">${stockCell}</td>
+      <td><input type="number" min="0" value="${m.threshold}" onchange="updateMenuItem('${m.id}','threshold',this.value)"></td>
+      <td style="display:flex;gap:.3rem;align-items:center;flex-wrap:wrap;">${stockCtrl}</td>
+      <td><button onclick="toggleRecipeEditor('${m.id}')">Recipe${recipeCount?` (${recipeCount})`:''}</button></td>
+      <td><button onclick="confirmAction(this, ()=>deleteMenuItem('${m.id}'))">Delete</button></td>
+    </tr>`;
+    const editorRow = state.recipeEditItemId===m.id ? `<tr><td colspan="10">${renderRecipeEditor(m)}</td></tr>` : '';
+    return mainRow + editorRow;
+  }).join('');
+
+  c.innerHTML = `
+    <datalist id="categoryList">${catOptions}</datalist>
+    <h3>Add a menu item</h3>
+    <div class="add-item-form">
+      <div><label>Name</label><input id="newName" placeholder="e.g. Masala Tea"></div>
+      <div><label>Category</label><input id="newCategory" list="categoryList" placeholder="Veg Snacks, Combos…"></div>
+      <div><label>Price ₹ (incl. GST)</label><input id="newPrice" type="number" min="0" step="0.5"></div>
+      <div><label>GST %</label><input id="newGst" type="number" min="0" max="28" value="5"></div>
+      <div><label>Opening stock (optional)</label><input id="newStock" type="number" min="0" value="0" placeholder="0" title="For ready-made items like chocolates & cold drinks. Leave 0 for cooked items — add a recipe after, and stock will come from raw materials."></div>
+      <div><label>Low-stock alert at</label><input id="newThreshold" type="number" min="0" value="5"></div>
+      <div><label>Unit (optional)</label><input id="newUnit" placeholder="plate, cup, pc…"></div>
+      <div><button class="btn-primary" style="width:100%;margin:0;" onclick="submitNewItem()">Add item</button></div>
+    </div>
+    ${state.menu.length ? `
+    <table class="report-table">
+      <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>GST %</th><th>Stock mode</th><th>Stock (click to edit)</th><th>Alert at</th><th>Restock</th><th>Recipe</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : `<p class="empty-state" style="display:block;">No items yet — add your first one above. It'll show up in New Order right away.</p>`}
+
+    <h3>Backup &amp; restore</h3>
+    <p style="font-size:.82rem;color:var(--ink-soft);margin:-.3rem 0 .7rem;">
+      Your data lives in this browser. Download a backup file now and then — to a USB drive, cloud folder, or email to yourself —
+      so you can restore it here or on a new PC if this browser's data is ever cleared. Backups include customers, raw materials, and all sales.
+    </p>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;">
+      <button class="btn-primary" style="width:auto;margin:0;" onclick="backupAllData()">⬇ Download backup file</button>
+      <button style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:.7rem 1rem;" onclick="document.getElementById('restoreFile').click()">⬆ Restore from backup file</button>
+      <input type="file" id="restoreFile" accept="application/json" style="display:none;" onchange="restoreFromBackup(this.files[0])">
+    </div>
+
+    <button class="btn-text" style="width:auto;" onclick="confirmAction(this, resetAllData)">Reset all data (menu, orders, sales, customers, raw materials)</button>
+  `;
+}
+
+// ---------- Raw materials tab ----------
+async function addRawMaterial(){
+  const name = document.getElementById('rawName').value.trim();
+  const unit = document.getElementById('rawUnit').value;
+  const stock = +document.getElementById('rawStock').value || 0;
+  const threshold = +document.getElementById('rawThreshold').value || 0;
+  if(!name){ showToast('Enter a raw material name'); return; }
+  state.raw.push({id:uid('R'), name, unit, stock, threshold});
+  await dbSet('raw-materials', state.raw);
+  renderRawTab();
+  showToast(`${name} added to raw materials`);
+}
+async function updateRawMaterial(id, field, value){
+  const raw = rawById(id);
+  if(!raw) return;
+  raw[field] = (field==='name' || field==='unit') ? value : +value;
+  await dbSet('raw-materials', state.raw);
+  renderRawTab();
+}
+async function adjustRawStock(id, delta){
+  if(!delta){ showToast('Enter a quantity'); return; }
+  const raw = rawById(id);
+  if(!raw) return;
+  raw.stock = round2(raw.stock + delta);
+  await dbSet('raw-materials', state.raw);
+  renderRawTab();
+  showToast(`${raw.name}: ${delta>0?'+':''}${delta} ${raw.unit}`);
+}
+async function deleteRawMaterial(id){
+  state.raw = state.raw.filter(r=>r.id!==id);
+  // remove from any recipes; items left with no recipe fall back to manual stock
+  state.menu.forEach(m=>{
+    if(m.recipe) m.recipe = m.recipe.filter(l=>l.rawId!==id);
+    if(m.stockMode==='auto' && (!m.recipe || m.recipe.length===0)) m.stockMode='manual';
+  });
+  await dbSet('raw-materials', state.raw);
+  await dbSet('menu-items', state.menu);
+  renderRawTab();
+}
+async function toggleAutoDeduct(checked){
+  state.settings.autoDeductRaw = !!checked;
+  await dbSet('app-settings', state.settings);
+  showToast(state.settings.autoDeductRaw ? 'Auto-deduct ON — orders will use up raw materials via recipes' : 'Auto-deduct OFF — adjust raw stock manually');
+}
+
+function renderRawTab(){
+  const c = document.getElementById('rawContent');
+  const rows = state.raw.map(r=>`
+    <tr>
+      <td><input class="wide" value="${escapeHtml(r.name)}" onchange="updateRawMaterial('${r.id}','name',this.value)"></td>
+      <td>
+        <select onchange="updateRawMaterial('${r.id}','unit',this.value)">
+          ${['g','kg','ml','l','pc'].map(u=>`<option value="${u}" ${r.unit===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+      </td>
+      <td class="num ${r.stock<=r.threshold?'low':''}">${r.stock} ${escapeHtml(r.unit)}</td>
+      <td><input type="number" min="0" step="any" value="${r.threshold}" onchange="updateRawMaterial('${r.id}','threshold',this.value)"></td>
+      <td style="display:flex;gap:.3rem;align-items:center;flex-wrap:wrap;">
+        <input type="number" min="0" step="any" placeholder="Qty" id="rawadj-${r.id}" style="width:70px;">
+        <button onclick="adjustRawStock('${r.id}', +document.getElementById('rawadj-${r.id}').value)">+ Add</button>
+        <button onclick="adjustRawStock('${r.id}', -(+document.getElementById('rawadj-${r.id}').value))">− Use</button>
+      </td>
+      <td><button onclick="confirmAction(this, ()=>deleteRawMaterial('${r.id}'))">Delete</button></td>
+    </tr>`).join('');
+
+  const recipeItems = state.menu.filter(m=>itemRecipe(m).length>0);
+  const portionRows = recipeItems.map(m=>{
+    const portions = portionsPossible(m);
+    const limiting = itemRecipe(m).map(l=>{
+      const raw = rawById(l.rawId);
+      return raw ? {name:raw.name, can:Math.floor(Math.max(0,raw.stock)/l.qty)} : null;
+    }).filter(Boolean).sort((a,b)=>a.can-b.can)[0];
+    return `<tr>
+      <td>${escapeHtml(m.name)}</td>
+      <td class="num ${portions!==null&&portions<=5?'low':''}">${portions===null?'—':portions}</td>
+      <td>${limiting?`${escapeHtml(limiting.name)} (enough for ${limiting.can})`:'—'}</td>
+    </tr>`;
+  }).join('');
+
+  c.innerHTML = `
+    <div class="setting-row">
+      <input type="checkbox" id="autoDeductChk" ${state.settings.autoDeductRaw?'checked':''} onchange="toggleAutoDeduct(this.checked)">
+      <label for="autoDeductChk"><strong>Auto-deduct raw materials on orders</strong> — when ON, punching an order uses up ingredients per the item's recipe. When OFF, adjust raw stock manually with the +Add / −Use buttons below. Note: items set to "From recipe" stock mode always use up raw materials when sold — that's how their stock is counted.</label>
+    </div>
+
+    <h3>Add a raw material</h3>
+    <div class="add-item-form">
+      <div><label>Name</label><input id="rawName" placeholder="e.g. Potato"></div>
+      <div><label>Unit</label>
+        <select id="rawUnit">
+          <option value="g">g (grams)</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l (litres)</option>
+          <option value="pc">pc (pieces)</option>
+        </select>
+      </div>
+      <div><label>Opening stock</label><input id="rawStock" type="number" min="0" step="any" value="0"></div>
+      <div><label>Low-stock alert at</label><input id="rawThreshold" type="number" min="0" step="any" value="0"></div>
+      <div><button class="btn-primary" style="width:100%;margin:0;" onclick="addRawMaterial()">Add material</button></div>
+    </div>
+
+    ${state.raw.length ? `
+    <table class="report-table">
+      <thead><tr><th>Material</th><th>Unit</th><th>In stock</th><th>Alert at</th><th>Adjust stock</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : `<p class="empty-state" style="display:block;">No raw materials yet. Add potato, flour, oil, milk… then attach them to menu items via the Recipe button in Inventory &amp; Menu.</p>`}
+
+    <h3>Portions possible from current raw stock</h3>
+    ${recipeItems.length ? `
+    <table class="report-table">
+      <thead><tr><th>Menu item</th><th class="num">Portions possible</th><th>Limiting ingredient</th></tr></thead>
+      <tbody>${portionRows}</tbody>
+    </table>` : `<p class="empty-state" style="display:block;">No recipes yet. Go to Inventory &amp; Menu → click "Recipe" on an item → add its ingredients per portion, and this table will fill in.</p>`}
+  `;
+}
+
+// ---------- Customers tab ----------
+async function addCustomer(){
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const opening = +document.getElementById('custOpening').value || 0;
+  if(!name){ showToast('Enter the customer\'s name'); return; }
+  const cust = {id:uid('C'), name, phone, balance:round2(opening), history:[]};
+  if(opening>0) cust.history.push({time:new Date().toISOString(), type:'topup', amount:opening, note:'Opening balance'});
+  state.customers.push(cust);
+  await dbSet('customers', state.customers);
+  renderCustomersTab();
+  showToast(`${name} added${opening>0?` with ${fmt(opening)}`:''}`);
+}
+async function updateCustomer(id, field, value){
+  const c = customerById(id);
+  if(!c) return;
+  c[field] = value;
+  await dbSet('customers', state.customers);
+  renderCustomersTab();
+}
+async function topUpCustomer(id){
+  const input = document.getElementById('topup-'+id);
+  const amount = +input.value;
+  if(!amount || amount<=0){ showToast('Enter a top-up amount'); return; }
+  await adjustCustomerBalance(id, amount, 'topup', 'Top-up at counter');
+  input.value='';
+  renderCustomersTab();
+  const c = customerById(id);
+  showToast(`${c.name}: +${fmt(amount)} — balance ${fmt(c.balance)}`);
+}
+async function deleteCustomer(id){
+  const c = customerById(id);
+  if(c && Math.abs(c.balance) > 0.005){
+    showToast(`${c.name} has a balance of ${fmt(c.balance)} — settle it before deleting`);
+    return;
+  }
+  state.customers = state.customers.filter(x=>x.id!==id);
+  await dbSet('customers', state.customers);
+  renderCustomersTab();
+}
+async function deleteTopUp(customerId, index){
+  const c = customerById(customerId);
+  if(!c || !c.history || !c.history[index]) { showToast('Could not find that entry'); return; }
+  const entry = c.history[index];
+  if(entry.type!=='topup'){ showToast('Only top-ups can be deleted here — reverse purchases by deleting/editing the order in Sales'); return; }
+  c.history.splice(index, 1);
+  c.balance = round2(c.balance - entry.amount);
+  await dbSet('customers', state.customers);
+  renderCustomersTab();
+  showToast(`Removed ${fmt(entry.amount)} top-up — ${c.name}'s balance is now ${fmt(c.balance)}`);
+}
+async function editTopUp(customerId, index, newAmount){
+  const c = customerById(customerId);
+  if(!c || !c.history || !c.history[index]) { showToast('Could not find that entry'); return; }
+  const entry = c.history[index];
+  if(entry.type!=='topup'){ showToast('Only top-ups can be edited here'); return; }
+  const val = +newAmount;
+  if(isNaN(val) || val<=0){ showToast('Enter a valid amount'); return; }
+  const delta = round2(val - entry.amount);
+  entry.amount = round2(val);
+  c.balance = round2(c.balance + delta);
+  await dbSet('customers', state.customers);
+  renderCustomersTab();
+  showToast(`Top-up corrected to ${fmt(val)} — ${c.name}'s balance is now ${fmt(c.balance)}`);
+}
+function promptEditTopUp(customerId, index, currentAmount){
+  const val = window.prompt('Correct top-up amount (₹):', currentAmount);
+  if(val===null) return;
+  editTopUp(customerId, index, val);
+}
+function toggleCustomerHistory(id){
+  state.historyOpenCustomerId = state.historyOpenCustomerId===id ? null : id;
+  renderCustomersTab();
+}
+
+function renderCustomersTab(){
+  const c = document.getElementById('customersContent');
+  const totalBalance = round2(state.customers.reduce((s,x)=>s+x.balance,0));
+  const dueCustomers = state.customers.filter(x=>x.balance<0);
+
+  const rows = state.customers.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(cu=>{
+    const activityLine = (h, idx) => {
+      const d = new Date(h.time);
+      const label = h.type==='topup'?'Top-up':(h.type==='purchase'?'Purchase':'Refund');
+      const controls = h.type==='topup' ? `
+        <button onclick="promptEditTopUp('${cu.id}',${idx},${h.amount})" style="font-size:.72rem;text-decoration:underline;border:none;background:none;color:var(--green-mid);padding:0;">Edit</button>
+        <button onclick="confirmAction(this, ()=>deleteTopUp('${cu.id}',${idx}))" style="font-size:.72rem;text-decoration:underline;border:none;background:none;color:var(--chili);padding:0;">Delete</button>
+      ` : '';
+      return `<div><span>${d.toLocaleDateString('en-IN')} ${d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${label}${h.note?` · ${escapeHtml(h.note)}`:''}</span><span style="display:flex;align-items:center;gap:.5rem;"><span class="t-amt">${h.amount>0?'+':''}${fmt(h.amount)}</span>${controls}</span></div>`;
+    };
+
+    const recentHtml = (cu.history && cu.history.length)
+      ? `<div class="cust-history">
+          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin-bottom:.2rem;">Recent — Edit or Delete a mistaken top-up right here</div>
+          ${cu.history.slice(0,3).map((h,idx)=>activityLine(h,idx)).join('')}
+          ${cu.history.length>3 ? `<button onclick="toggleCustomerHistory('${cu.id}')" style="font-size:.72rem;border:none;background:none;color:var(--ink-soft);text-decoration:underline;padding:.2rem 0 0;">${state.historyOpenCustomerId===cu.id?'Hide full history':`Show all ${cu.history.length} transactions`}</button>` : ''}
+        </div>`
+      : `<div class="cust-history" style="color:var(--ink-soft);">No transactions yet.</div>`;
+
+    const fullHistHtml = (state.historyOpenCustomerId===cu.id && cu.history && cu.history.length>3)
+      ? `<tr><td colspan="6"><div class="cust-history">
+          ${cu.history.map((h,idx)=>({h,idx})).slice(3,40).map(({h,idx})=>activityLine(h,idx)).join('')}
+        </div></td></tr>`
+      : '';
+
+    return `<tr>
+      <td><input class="wide" value="${escapeHtml(cu.name)}" onchange="updateCustomer('${cu.id}','name',this.value)"></td>
+      <td><input class="wide" value="${escapeHtml(cu.phone||'')}" placeholder="phone" onchange="updateCustomer('${cu.id}','phone',this.value)"></td>
+      <td class="num"><span class="cust-balance ${cu.balance<0?'negative':''}">${fmt(cu.balance)}</span>${cu.balance<0?' <span style="font-size:.7rem;color:var(--chili);">DUE</span>':''}</td>
+      <td style="display:flex;gap:.3rem;align-items:center;">
+        <input type="number" min="1" placeholder="₹" id="topup-${cu.id}" style="width:70px;">
+        <button onclick="topUpCustomer('${cu.id}')">Add money</button>
+      </td>
+      <td></td>
+      <td><button onclick="confirmAction(this, ()=>deleteCustomer('${cu.id}'))" title="Removes this customer entirely — needs a zero balance">Delete customer</button></td>
+    </tr>
+    <tr><td colspan="6" style="padding-top:0;">${recentHtml}</td></tr>` + fullHistHtml;
+  }).join('');
+
+  c.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">Customers</div><div class="value">${state.customers.length}</div></div>
+      <div class="stat-card"><div class="label">Wallet money held</div><div class="value">${fmt(totalBalance)}</div><div class="sub">Total of all balances — this is customers' money with you</div></div>
+      <div class="stat-card"><div class="label">Customers in due</div><div class="value">${dueCustomers.length}</div><div class="sub">${dueCustomers.length?dueCustomers.map(x=>escapeHtml(x.name)).join(', '):'Nobody owes you right now'}</div></div>
+    </div>
+
+    <h3>Add a customer</h3>
+    <div class="add-item-form">
+      <div><label>First name</label><input id="custName" placeholder="e.g. Ramesh"></div>
+      <div><label>Phone (or last digits)</label><input id="custPhone" placeholder="e.g. 98765 or 43210"></div>
+      <div><label>Opening balance ₹ (optional)</label><input id="custOpening" type="number" min="0" value="0"></div>
+      <div><button class="btn-primary" style="width:100%;margin:0;" onclick="addCustomer()">Add customer</button></div>
+    </div>
+
+    ${state.customers.length ? `
+    <table class="report-table">
+      <thead><tr><th>Name</th><th>Phone</th><th class="num">Balance</th><th>Top up</th><th></th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : `<p class="empty-state" style="display:block;">No customers yet. Add regulars here, top up their balance, and pick "Account" as the payment method when they order.</p>`}
+  `;
+}
+
+// ---------- Sales report ----------
+function dateStringsForRange(range){
+  const dates = [];
+  const now = new Date();
+  if(range==='today'){ dates.push(todayStr()); }
+  else if(range==='week'){ for(let i=0;i<7;i++){ const d=new Date(now); d.setDate(d.getDate()-i); dates.push(fmtDate(d)); } }
+  else if(range==='month'){ for(let i=0;i<31;i++){ const d=new Date(now); d.setDate(d.getDate()-i); if(d.getMonth()!==now.getMonth() || d.getFullYear()!==now.getFullYear()) break; dates.push(fmtDate(d)); } }
+  return dates;
+}
+
+const DOW_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function dowIndex(dateStr){ const [y,m,d]=dateStr.split('-').map(Number); return (new Date(y,m-1,d).getDay()+6)%7; }
+function weekStartOf(dateStr){ const [y,m,d]=dateStr.split('-').map(Number); const dt=new Date(y,m-1,d); dt.setDate(dt.getDate()-((dt.getDay()+6)%7)); return fmtDate(dt); }
+function monthLabel(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'}); }
+
+function aggregateDays(days){
+  const agg = {taxable:0, gst:0, total:0, count:0, byItem:{}, byPayment:{}, orders:[],
+               daily:[], byDOW:{}, byWeek:{}, byMonth:{}};
+  days.filter(Boolean).forEach(day=>{
+    if(day.count>0){
+      agg.daily.push({date:day.date, count:day.count, taxable:day.taxable, gst:day.gst, total:day.total});
+      const dow = dowIndex(day.date);
+      if(!agg.byDOW[dow]) agg.byDOW[dow] = {days:0, count:0, total:0};
+      agg.byDOW[dow].days++; agg.byDOW[dow].count += day.count; agg.byDOW[dow].total = round2(agg.byDOW[dow].total + day.total);
+      const wk = weekStartOf(day.date);
+      if(!agg.byWeek[wk]) agg.byWeek[wk] = {count:0, total:0, gst:0};
+      agg.byWeek[wk].count += day.count; agg.byWeek[wk].total = round2(agg.byWeek[wk].total + day.total); agg.byWeek[wk].gst = round2(agg.byWeek[wk].gst + day.gst);
+      const mo = day.date.slice(0,7);
+      if(!agg.byMonth[mo]) agg.byMonth[mo] = {count:0, total:0, gst:0, taxable:0};
+      agg.byMonth[mo].count += day.count; agg.byMonth[mo].total = round2(agg.byMonth[mo].total + day.total);
+      agg.byMonth[mo].gst = round2(agg.byMonth[mo].gst + day.gst); agg.byMonth[mo].taxable = round2(agg.byMonth[mo].taxable + day.taxable);
+    }
+    agg.taxable = round2(agg.taxable + day.taxable);
+    agg.gst = round2(agg.gst + day.gst);
+    agg.total = round2(agg.total + day.total);
+    agg.count += day.count;
+    day.orders.forEach(o=>{
+      agg.orders.push(o);
+      agg.byPayment[o.payment] = round2((agg.byPayment[o.payment]||0) + o.total);
+      o.items.forEach(it=>{
+        if(!agg.byItem[it.id]) agg.byItem[it.id] = {name:it.name, qty:0, revenue:0};
+        agg.byItem[it.id].qty += it.qty;
+        agg.byItem[it.id].revenue = round2(agg.byItem[it.id].revenue + it.lineTotal);
+      });
+    });
+  });
+  agg.daily.sort((a,b)=>b.date.localeCompare(a.date));
+  agg.orders.sort((a,b)=>new Date(b.time)-new Date(a.time));
+  return agg;
+}
+
+async function loadRange(range){
+  state.activeRange = range;
+  document.querySelectorAll('#rangeRow .range-btn[data-range]').forEach(b=>b.classList.toggle('active', b.dataset.range===range));
+  document.getElementById('salesContent').innerHTML = 'Loading…';
+
+  let dates;
+  if(range==='all' || range==='overview'){
+    dates = ((await dbGet('all-dates')) || []).slice().sort().reverse();
+  } else {
+    dates = dateStringsForRange(range);
+  }
+  const days = await Promise.all(dates.map(d=>dbGet(dayKey(d))));
+  const agg = aggregateDays(days);
+  agg.range = range;
+  state._currentAgg = agg;
+  if(range==='overview') renderOverview(agg);
+  else renderSalesReport(agg);
+}
+
+function renderOverview(agg){
+  const el = document.getElementById('salesContent');
+  if(agg.count===0){
+    el.innerHTML = `<p class="empty-state" style="display:block;">No sales recorded yet — the overview will fill in as you punch orders.</p>`;
+    return;
+  }
+  const bestDOW = Object.entries(agg.byDOW).sort((a,b)=>b[1].total-a[1].total)[0];
+  const dowRows = DOW_NAMES.map((name,i)=>{
+    const d = agg.byDOW[i];
+    if(!d) return `<tr><td>${name}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>`;
+    return `<tr><td>${name}${bestDOW && +bestDOW[0]===i?' ⭐':''}</td><td class="num">${d.count}</td><td class="num">${fmt(d.total)}</td><td class="num">${fmt(d.total/d.days)}</td></tr>`;
+  }).join('');
+
+  const weekRows = Object.entries(agg.byWeek).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,10).map(([wk,w])=>
+    `<tr><td>Week of ${niceDate(wk)}</td><td class="num">${w.count}</td><td class="num">${fmt(w.gst)}</td><td class="num">${fmt(w.total)}</td></tr>`).join('');
+
+  const monthRows = Object.entries(agg.byMonth).sort((a,b)=>b[0].localeCompare(a[0])).map(([mo,m])=>
+    `<tr><td>${monthLabel(mo)}</td><td class="num">${m.count}</td><td class="num">${fmt(m.taxable)}</td><td class="num">${fmt(m.gst)}</td><td class="num">${fmt(m.total)}</td></tr>`).join('');
+
+  const dailyRows = agg.daily.slice(0,31).map(d=>
+    `<tr><td>${niceDate(d.date)}</td><td class="num">${d.count}</td><td class="num">${fmt(d.gst)}</td><td class="num">${fmt(d.total)}</td></tr>`).join('');
+
+  const payParts = ['Cash','UPI','Card','Account'].filter(p=>agg.byPayment[p]).map(p=>`${p} ${fmt(agg.byPayment[p])}`).join(' · ');
+  const activeDays = agg.daily.length;
+
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">All-time sales</div><div class="value">${fmt(agg.total)}</div><div class="sub">${payParts}</div></div>
+      <div class="stat-card"><div class="label">All-time orders</div><div class="value">${agg.count}</div><div class="sub">across ${activeDays} selling day${activeDays===1?'':'s'}</div></div>
+      <div class="stat-card"><div class="label">Avg per selling day</div><div class="value">${fmt(activeDays?agg.total/activeDays:0)}</div></div>
+      <div class="stat-card"><div class="label">GST collected (all time)</div><div class="value">${fmt(agg.gst)}</div><div class="sub">CGST ${fmt(agg.gst/2)} · SGST ${fmt(agg.gst/2)}</div></div>
+    </div>
+
+    <h4>Sales by day of the week ${bestDOW?`<span style="font-weight:400;font-size:.78rem;color:var(--ink-soft);">(⭐ = your best day)</span>`:''}</h4>
+    <table class="report-table">
+      <thead><tr><th>Day</th><th class="num">Orders</th><th class="num">Total sales</th><th class="num">Avg per day</th></tr></thead>
+      <tbody>${dowRows}</tbody>
+    </table>
+
+    <h4>Weekly sales (last 10 weeks)</h4>
+    <table class="report-table">
+      <thead><tr><th>Week</th><th class="num">Orders</th><th class="num">GST</th><th class="num">Total</th></tr></thead>
+      <tbody>${weekRows}</tbody>
+    </table>
+
+    <h4>Monthly sales</h4>
+    <table class="report-table">
+      <thead><tr><th>Month</th><th class="num">Orders</th><th class="num">Taxable</th><th class="num">GST</th><th class="num">Total</th></tr></thead>
+      <tbody>${monthRows}</tbody>
+    </table>
+
+    <h4>Day by day (last 31 selling days)</h4>
+    <table class="report-table">
+      <thead><tr><th>Date</th><th class="num">Orders</th><th class="num">GST</th><th class="num">Total</th></tr></thead>
+      <tbody>${dailyRows}</tbody>
+    </table>
+  `;
+}
+
+function renderSalesReport(agg){
+  const el = document.getElementById('salesContent');
+  state._currentAgg = agg;
+  const itemRows = Object.values(agg.byItem||{}).sort((a,b)=>b.revenue-a.revenue)
+    .map(it=>`<tr><td>${escapeHtml(it.name)}</td><td class="num">${it.qty}</td><td class="num">${fmt(it.revenue)}</td></tr>`).join('');
+
+  const payParts = ['Cash','UPI','Card','Account'].filter(p=>agg.byPayment[p]).map(p=>`${p} ${fmt(agg.byPayment[p])}`).join(' · ');
+
+  // group all orders by date with headings
+  let orderRows = '';
+  let currentDate = '';
+  (agg.orders||[]).forEach(o=>{
+    const oDate = dateFromOrderId(o.id);
+    if(oDate !== currentDate){
+      currentDate = oDate;
+      orderRows += `<div class="order-day-heading">${niceDate(oDate)}</div>`;
+    }
+    const d = new Date(o.time);
+    const itemsSummary = o.items.map(it=>`${it.qty}× ${escapeHtml(it.name)}`).join(', ');
+    const payLabel = o.payment==='Account' && o.customerName ? `Account (${escapeHtml(o.customerName)})` : escapeHtml(o.payment);
+    orderRows += `<div class="order-row">
+      <div><strong>#${o.token}</strong>${o.editedAt?' <span style="font-size:.68rem;color:var(--ink-soft);">(edited)</span>':''}<span class="meta">${d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${itemsSummary} · ${payLabel}</span></div>
+      <div style="display:flex;align-items:center;gap:.7rem;">
+        <div class="amt">${fmt(o.total)}</div>
+        <button class="order-edit" onclick="startEditOrder('${o.id}')">Edit</button>
+        <button class="order-delete" onclick="confirmAction(this, ()=>deleteOrder('${o.id}'))">Delete</button>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">Orders</div><div class="value">${agg.count}</div></div>
+      <div class="stat-card"><div class="label">Taxable Value</div><div class="value">${fmt(agg.taxable)}</div></div>
+      <div class="stat-card"><div class="label">GST Collected</div><div class="value">${fmt(agg.gst)}</div><div class="sub">CGST ${fmt(agg.gst/2)} · SGST ${fmt(agg.gst/2)}</div></div>
+      <div class="stat-card"><div class="label">Grand Total</div><div class="value">${fmt(agg.total)}</div><div class="sub">${payParts||''}</div></div>
+    </div>
+    ${agg.count===0 ? `<p class="empty-state" style="display:block;">No sales recorded for this period yet.</p>` : `
+    <table class="report-table">
+      <thead><tr><th>Item</th><th class="num">Qty Sold</th><th class="num">Revenue</th></tr></thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    <h4>All orders in this period (${(agg.orders||[]).length})</h4>
+    <div class="order-row-list">${orderRows}</div>
+    `}
+  `;
+}
+
+// ---------- Export (Excel with sheets; CSV fallback) ----------
+function loadXLSX(){
+  return new Promise((resolve, reject)=>{
+    if(window.XLSX) return resolve(window.XLSX);
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = ()=> window.XLSX ? resolve(window.XLSX) : reject(new Error('XLSX missing'));
+    s.onerror = ()=> reject(new Error('could not load XLSX library'));
+    document.head.appendChild(s);
+  });
+}
+
+function buildReportSections(agg){
+  const rangeLabels = {today:'Today', week:'This Week', month:'This Month', all:'All Time', overview:'All Time'};
+  const payRows = ['Cash','UPI','Card','Account'].filter(p=>agg.byPayment[p]).map(p=>[p, agg.byPayment[p]]);
+  const sections = [];
+
+  sections.push({name:'Summary', rows:[
+    ['Canteen Sales Report'],
+    ['Period', rangeLabels[agg.range]||''],
+    ['Generated', new Date().toLocaleString('en-IN')],
+    [],
+    ['Orders', agg.count],
+    ['Taxable Value', agg.taxable],
+    ['CGST', round2(agg.gst/2)],
+    ['SGST', round2(agg.gst/2)],
+    ['Total GST', agg.gst],
+    ['Grand Total', agg.total],
+    [],
+    ['Payment method','Amount'],
+    ...payRows
+  ]});
+
+  sections.push({name:'Daily', rows:[
+    ['Date','Orders','Taxable','GST','Total'],
+    ...agg.daily.map(d=>[d.date, d.count, d.taxable, d.gst, d.total])
+  ]});
+
+  if(agg.range==='all' || agg.range==='overview'){
+    sections.push({name:'Day of Week', rows:[
+      ['Day','Selling days','Orders','Total','Avg per day'],
+      ...DOW_NAMES.map((name,i)=>{
+        const d = agg.byDOW[i];
+        return d ? [name, d.days, d.count, d.total, round2(d.total/d.days)] : [name,0,0,0,0];
+      })
+    ]});
+    sections.push({name:'Weekly', rows:[
+      ['Week starting','Orders','GST','Total'],
+      ...Object.entries(agg.byWeek).sort((a,b)=>b[0].localeCompare(a[0])).map(([wk,w])=>[wk, w.count, w.gst, w.total])
+    ]});
+    sections.push({name:'Monthly', rows:[
+      ['Month','Orders','Taxable','GST','Total'],
+      ...Object.entries(agg.byMonth).sort((a,b)=>b[0].localeCompare(a[0])).map(([mo,m])=>[monthLabel(mo), m.count, m.taxable, m.gst, m.total])
+    ]});
+  }
+
+  sections.push({name:'Items', rows:[
+    ['Item','Qty sold','Revenue'],
+    ...Object.values(agg.byItem).sort((a,b)=>b.revenue-a.revenue).map(it=>[it.name, it.qty, it.revenue])
+  ]});
+
+  const orderRows = [['Token','Date','Time','Item','Qty','Price','Line Total','Payment','Customer']];
+  agg.orders.forEach(o=>{
+    const d = new Date(o.time);
+    o.items.forEach(it=>{
+      orderRows.push([o.token, d.toLocaleDateString('en-IN'), d.toLocaleTimeString('en-IN'), it.name, it.qty, it.price, it.lineTotal, o.payment, o.customerName||'']);
+    });
+  });
+  sections.push({name:'Orders', rows:orderRows});
+
+  return sections;
+}
+
+async function exportReport(){
+  const agg = state._currentAgg;
+  if(!agg || agg.count===0){ showToast('Nothing to export yet'); return; }
+  const sections = buildReportSections(agg);
+  const stamp = todayStr();
+  try{
+    const XLSX = await loadXLSX();
+    const wb = XLSX.utils.book_new();
+    sections.forEach(sec=>{
+      const ws = XLSX.utils.aoa_to_sheet(sec.rows);
+      ws['!cols'] = (sec.rows[0]||[]).map((_,i)=>({wch: Math.max(12, ...sec.rows.map(r=>String(r[i]??'').length+2).slice(0,50))}));
+      XLSX.utils.book_append_sheet(wb, ws, sec.name);
+    });
+    XLSX.writeFile(wb, `canteen-report-${stamp}.xlsx`);
+    showToast('Excel report downloaded — check the sheet tabs at the bottom');
+  }catch(e){
+    console.error('XLSX failed, falling back to CSV', e);
+    const csv = sections.map(sec=>
+      `=== ${sec.name} ===\n` + sec.rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n')
+    ).join('\n\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `canteen-report-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('No internet for Excel converter — downloaded a sectioned CSV instead');
+  }
+}
+
+// ---------- Backup / restore to a real file on disk ----------
+function backupAllData(){
+  const dump = {};
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    dump[k] = localStorage.getItem(k);
+  }
+  const blob = new Blob([JSON.stringify(dump, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `canteen-backup-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Backup file downloaded');
+}
+
+function restoreFromBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try{
+      const dump = JSON.parse(reader.result);
+      const keys = Object.keys(dump);
+      if(keys.length===0){ showToast('That file has no data in it'); return; }
+      keys.forEach(k => localStorage.setItem(k, dump[k]));
+      showToast(`Restored ${keys.length} record${keys.length===1?'':'s'} — reloading…`);
+      setTimeout(()=>location.reload(), 900);
+    }catch(e){
+      showToast('Could not read that file — is it a canteen backup .json?');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
