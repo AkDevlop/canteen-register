@@ -317,7 +317,6 @@ main { max-width: 1080px; margin: 0 auto; padding: 1.2rem; }
 
 /* ── Tables ────────────────────────────────────────────────────────────── */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1.2rem; border-radius: var(--radius); }
-.table-scroll table { margin-bottom: 0; }
 
 table.report-table {
   width: 100%;
@@ -350,6 +349,8 @@ table.report-table {
 .report-table input     { width: 64px; padding: .3rem; border: 1px solid var(--border); border-radius: 5px; }
 .report-table input.wide { width: 130px; }
 .report-table select    { padding: .3rem; border: 1px solid var(--border); border-radius: 5px; background: #fff; }
+/* must come AFTER table.report-table so the cascade correctly removes the margin when inside a scroll wrapper */
+.table-scroll table { margin-bottom: 0; }
 
 /* ── Order history rows ─────────────────────────────────────────────────── */
 .order-row-list    { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.2rem; }
