@@ -1713,10 +1713,36 @@ function restoreFromBackup(file){
       const dump = JSON.parse(reader.result);
       const keys = Object.keys(dump);
       if(keys.length===0){ showToast('That file has no data in it'); return; }
+
+      // 1. Write everything to localStorage immediately (app works offline too)
       keys.forEach(k => localStorage.setItem(k, dump[k]));
-      showToast(`Restored ${keys.length} record${keys.length===1?'':'s'} — reloading…`);
-      setTimeout(()=>location.reload(), 900);
+      showToast(`↑ Pushing ${keys.length} records to cloud — please wait…`);
+
+      // 2. Parse each stored JSON string back to a real value for Supabase JSONB
+      const rows = keys.map(k => {
+        let value;
+        try { value = JSON.parse(dump[k]); } catch(e) { value = dump[k]; }
+        return { key: k, value, updated_at: new Date().toISOString() };
+      });
+
+      // 3. Upsert in small batches so no single request is too large
+      const CHUNK = 8;
+      let errors = 0;
+      for(let i = 0; i < rows.length; i += CHUNK){
+        const chunk = rows.slice(i, i + CHUNK);
+        const { error } = await supa.from('store').upsert(chunk, { onConflict: 'key' });
+        if(error){ console.error('Supabase batch error', error); errors++; }
+      }
+
+      if(errors === 0){
+        showToast(`☁ All ${keys.length} records restored & synced to Supabase!`);
+      } else {
+        showToast(`Local restore done — ${errors} cloud batch(es) failed (check console)`);
+      }
+
+      setTimeout(()=>location.reload(), 1800);
     }catch(e){
+      console.error(e);
       showToast('Could not read that file — is it a canteen backup .json?');
     }
   };
