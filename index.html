@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#eef0e7;
@@ -155,6 +156,12 @@
 
   footer.note{font-size:.75rem;color:var(--ink-soft);margin-top:.6rem;}
 
+  .sync-pill{border-radius:999px;padding:.4rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:.82rem;border:1px solid rgba(255,255,255,.25);transition:background .3s;}
+  .sync-pill.online{background:rgba(255,255,255,.12);color:#aee0b4;}
+  .sync-pill.offline{background:rgba(178,58,46,.35);color:#ffb3ad;}
+  .sync-pill.syncing{background:rgba(224,167,46,.25);color:#ffd88a;}
+  .sync-pill.error{background:rgba(178,58,46,.35);color:#ffb3ad;}
+
   @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important;}}
 </style>
 </head>
@@ -162,7 +169,10 @@
 
 <div class="topbar">
   <div class="brand">Canteen <span class="accent">Register</span></div>
-  <div class="today-pill" id="todayPill">Loading…</div>
+  <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+    <div class="sync-pill" id="syncStatus">☁ Connecting…</div>
+    <div class="today-pill" id="todayPill">Loading…</div>
+  </div>
 </div>
 
 <nav class="tabs">
@@ -214,7 +224,87 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// ---------- State ----------
+//Supabase (cloud sync layer)
+const SUPA_URL = 'https://gmimiyaehcpvivqodqts.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaW1peWFlaGNwdml2cW9kcXRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyNjE3NzcsImV4cCI6MjEwMTgzNzc3N30.5qeqcHVJcIkSXZGVxBDFX9k_-PMzbuVTtoSMcMc8fcE';
+const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let isOnline = navigator.onLine;
+let pendingSync = {};      // key → value, queued when offline or on error
+let syncRetryTimer = null;
+
+window.addEventListener('online',  () => { isOnline = true;  setSyncStatus('online');  flushPending(); });
+window.addEventListener('offline', () => { isOnline = false; setSyncStatus('offline'); });
+
+function setSyncStatus(s){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  const labels = { syncing:'↑ Syncing…', online:'☁', offline:'Offline', error:'⚠' };
+  el.textContent = labels[s] || s;
+  el.className = 'sync-pill ' + s;
+}
+
+async function pushToSupa(key, value){
+  if(!isOnline){ pendingSync[key] = value; return; }
+  try{
+    setSyncStatus('syncing');
+    const { error } = await supa.from('store').upsert({ key, value, updated_at: new Date().toISOString() });
+    if(error) throw error;
+    delete pendingSync[key];
+    if(Object.keys(pendingSync).length === 0) setSyncStatus('online');
+  } catch(e){
+    console.warn('Supabase sync deferred:', key, e.message);
+    pendingSync[key] = value;
+    setSyncStatus('error');
+    clearTimeout(syncRetryTimer);
+    syncRetryTimer = setTimeout(flushPending, 30000);
+  }
+}
+
+async function flushPending(){
+  const keys = Object.keys(pendingSync);
+  if(!keys.length || !isOnline) return;
+  setSyncStatus('syncing');
+  const rows = keys.map(k => ({ key: k, value: pendingSync[k], updated_at: new Date().toISOString() }));
+  try{
+    const { error } = await supa.from('store').upsert(rows);
+    if(error) throw error;
+    pendingSync = {};
+    setSyncStatus('online');
+  } catch(e){
+    console.warn('Supabase flush failed:', e.message);
+    setSyncStatus('error');
+    clearTimeout(syncRetryTimer);
+    syncRetryTimer = setTimeout(flushPending, 60000);
+  }
+}
+
+async function deleteFromSupa(key){
+  if(!isOnline) return;
+  try{ await supa.from('store').delete().eq('key', key); } catch(e){ /* non-critical */ }
+}
+
+async function clearSupabaseStore(){
+  if(!isOnline) return;
+  try{ await supa.from('store').delete().neq('key', '__placeholder__'); } catch(e){ console.warn('Supabase clear failed', e); }
+}
+
+async function pullAllFromSupa(){
+  try{
+    const { data, error } = await supa.from('store').select('key, value');
+    if(error) throw error;
+    if(data && data.length){
+      data.forEach(row => localStorage.setItem(row.key, JSON.stringify(row.value)));
+      return data.length;
+    }
+    return 0;
+  } catch(e){
+    console.warn('Supabase pull failed:', e.message);
+    return 0;
+  }
+}
+
+// State 
 let state = {
   menu: [],
   raw: [],
@@ -233,7 +323,7 @@ let state = {
   _currentAgg: null,
 };
 
-// ---------- Utilities ----------
+//Utilities 
 const fmt = n => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(n||0);
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function uid(p){ return (p||'I')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -280,7 +370,7 @@ function confirmAction(btn, action){
   }
 }
 
-// ---------- Storage (browser localStorage — data lives on this PC, in this browser) ----------
+// Storage (localStorage primary + Supabase cloud sync) 
 async function dbGet(key){
   try{
     const v = localStorage.getItem(key);
@@ -290,15 +380,30 @@ async function dbGet(key){
 async function dbSet(key, value){
   try{
     localStorage.setItem(key, JSON.stringify(value));
+    pushToSupa(key, value); // fire-and-forget background sync
     return true;
   }catch(e){ console.error('storage set failed', key, e); showToast('Could not save — your browser storage may be full or disabled'); return false; }
 }
 async function dbDelete(key){
-  try{ localStorage.removeItem(key); }catch(e){ /* ignore */ }
+  try{ localStorage.removeItem(key); deleteFromSupa(key); }catch(e){ /* ignore */ }
 }
 
-// ---------- Init ----------
+//Init 
 async function init(){
+  // If localStorage is empty (new device / cleared browser), restore from Supabase
+  if(localStorage.length === 0 && isOnline){
+    setSyncStatus('syncing');
+    const count = await pullAllFromSupa();
+    if(count > 0){
+      showToast(`Restored ${count} records from cloud ☁`);
+      setSyncStatus('online');
+    } else {
+      setSyncStatus('online');
+    }
+  } else {
+    setSyncStatus(isOnline ? 'online' : 'offline');
+  }
+
   state.menu = (await dbGet('menu-items')) || [];
   state.raw = (await dbGet('raw-materials')) || [];
   state.customers = (await dbGet('customers')) || [];
@@ -329,7 +434,7 @@ function renderAll(){
   if(state.activeTab==='sales') loadRange(state.activeRange);
 }
 
-// ---------- Tabs ----------
+// Tabs 
 function switchTab(tab){
   state.activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
@@ -342,13 +447,13 @@ function switchTab(tab){
   if(tab==='customers') renderCustomersTab();
 }
 
-// ---------- Today pill ----------
+//Today pill 
 function renderTodayPill(){
   document.getElementById('todayPill').textContent =
     `Today · ${fmt(state.today.total)} · ${state.today.count} order${state.today.count===1?'':'s'}`;
 }
 
-// ---------- Categories ----------
+//Categories 
 const PRESET_CATEGORIES = ['Veg Snacks','Non-Veg Snacks','Combos','Beverages','Desserts','Other'];
 
 function getUsedCategories(){
@@ -379,7 +484,7 @@ function renderCategoryChips(){
   });
 }
 
-// ---------- Raw materials helpers ----------
+//Raw materials helpers
 function rawById(id){ return state.raw.find(r=>r.id===id); }
 function itemRecipe(item){ return (item.recipe||[]).filter(l=>rawById(l.rawId)); }
 function portionsPossible(item){
@@ -419,7 +524,7 @@ function computeRawUsage(cartLines){
   return Object.entries(usage).map(([rawId, qty])=>({rawId, qty:round2(qty)}));
 }
 
-// ---------- Customers helpers ----------
+// Customers helpers 
 function customerById(id){ return state.customers.find(c=>c.id===id); }
 function customerLabel(c){
   const ph = c.phone ? ` (…${String(c.phone).slice(-4)})` : '';
@@ -435,7 +540,7 @@ async function adjustCustomerBalance(customerId, delta, type, note){
   await dbSet('customers', state.customers);
 }
 
-// ---------- Menu grid ----------
+//Menu grid 
 function renderMenuCard(m){
   const inCart = state.cart.find(c=>c.id===m.id);
   const avail = effectiveStock(m);
@@ -488,7 +593,7 @@ function flashStockWarning(itemId){
   showToast(isAutoStock(item) ? `Raw materials only allow ${effectiveStock(item)} more ${item.name}` : `Only ${item.stock} ${item.name} left in stock`);
 }
 
-// ---------- Cart ----------
+//Cart
 function addToCart(itemId){
   const item = state.menu.find(m=>m.id===itemId);
   if(!item) return;
@@ -568,7 +673,7 @@ function renderCart(){
     }
   }
 
-  const editBanner = state.editing ? `<div class="edit-banner">✏️ Editing Token #${state.editing.token} (${niceDate(dateFromOrderId(state.editing.id))}). Complete to save changes, or <button onclick="cancelEdit()">cancel and restore original</button>.</div>` : '';
+  const editBanner = state.editing ? `<div class="edit-banner">Editing Token #${state.editing.token} (${niceDate(dateFromOrderId(state.editing.id))}). Complete to save changes, or <button onclick="cancelEdit()">cancel and restore original</button>.</div>` : '';
 
   const lastOrder = state.today.orders[state.today.orders.length-1];
   const undoHtml = (!state.editing && lastOrder) ? `<div class="undo-bar">Last: Token #${lastOrder.token} · ${fmt(lastOrder.total)} — <button onclick="deleteOrder('${lastOrder.id}')">Undo</button></div>` : '';
@@ -592,7 +697,7 @@ function renderCart(){
   `;
 }
 
-// ---------- Order record engine (shared by complete / delete / edit) ----------
+//Order record engine (shared by complete / delete / edit) 
 async function addOrderRecord(order){
   const dateStr = dateFromOrderId(order.id);
   let dayRecord = (dateStr === state.today.date) ? state.today : ensureNextToken((await dbGet(dayKey(dateStr))) || emptyDay(dateStr));
@@ -865,6 +970,7 @@ async function resetAllData(){
   await dbDelete('menu-items');
   await dbDelete('raw-materials');
   await dbDelete('customers');
+  await clearSupabaseStore(); // wipe cloud copy too
   state.menu = [];
   state.raw = [];
   state.customers = [];
